@@ -1279,5 +1279,44 @@ module.exports = {
         })
       });
     })
+  },
+
+  // gh-570
+  'pushing/setting a populated path should not cast': function () {
+    var db = start()
+      , B = db.model('RefBlogPost')
+      , U = db.model('RefUser')
+
+    U.create({ name: 'Dave' }, { name: 'Nathan' }, function (err, dave, nathan) {
+      should.strictEqual(null, err);
+      B.create({
+          _creator: dave
+        , fans: [nathan, dave]
+        , comments: [{ _creator: nathan, content: '9:00 AM' }]
+      }, function (err, post) {
+        should.strictEqual(null, err);
+
+        B.findById(post)
+        .populate('_creator')
+        .populate('comments._creator', 'name')
+        .populate('fans').exec(function (err, post) {
+          db.close();
+          should.strictEqual(null, err);
+
+          post._creator.name.should.equal('Dave');
+          post.fans.length.should.equal(2);
+          post.fans[0].name.should.equal('Nathan');
+          post.fans[1].name.should.equal('Dave');
+          post.comments.length.should.equal(1);
+          post.comments[0].content.should.equal('9:00 AM');
+          post.comments[0]._creator.name.should.equal('Nathan');
+
+          post.fans.push({ name: 'Guillermo' });
+          should.exist(post.fans[2].name);
+          post.fans[2].name.should.equal('Guillermo');
+        });
+      });
+    });
+    // blogpost iwth _creator and fans
   }
 };
