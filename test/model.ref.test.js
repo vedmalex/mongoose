@@ -1300,7 +1300,6 @@ module.exports = {
         .populate('_creator')
         .populate('comments._creator', 'name')
         .populate('fans').exec(function (err, post) {
-          db.close();
           should.strictEqual(null, err);
 
           post._creator.name.should.equal('Dave');
@@ -1314,6 +1313,22 @@ module.exports = {
           post.fans.push({ name: 'Guillermo' });
           should.exist(post.fans[2].name);
           post.fans[2].name.should.equal('Guillermo');
+          var gid = post.fans[2].id;
+
+          post.save(function (err) {
+            should.strictEqual(null, err);
+
+            B.findById(post, function (err, post) {
+              db.close();
+              should.strictEqual(null, err);
+
+              console.error('----------------');
+              console.error(post.fans.toObject());
+
+              post.fans.length.should.equal(3);
+              gid.should.equal(post.fans[2].toString());
+            })
+          })
         });
       });
     });
