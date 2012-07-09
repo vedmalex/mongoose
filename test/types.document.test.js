@@ -21,7 +21,7 @@ function Dummy () {
   mongoose.Document.call(this, {});
 }
 Dummy.prototype.__proto__ = mongoose.Document.prototype;
-Dummy.prototype.setSchema(new Schema)
+Dummy.prototype._setSchema(new Schema)
 
 function Subdocument () {
   var arr = new DocumentArray;
@@ -41,7 +41,7 @@ Subdocument.prototype.__proto__ = EmbeddedDocument.prototype;
  * Set schema.
  */
 
-Subdocument.prototype.setSchema(new Schema({
+Subdocument.prototype._setSchema(new Schema({
     test: { type: String, required: true }
   , work: { type: String, validate: /^good/ }
 }));
@@ -73,9 +73,9 @@ describe('types.document', function(){
     a.set('work', 'nope');
 
     a.save(function(err){
-      assert.ok(a.parent._validationError instanceof ValidationError);
-      assert.equal(a.parent.errors['jsconf.ar.0.work'].name, 'ValidatorError');
-      assert.equal(a.parent._validationError.toString(), 'ValidationError: Validator "required" failed for path test, Validator failed for path work');
+      assert.ok(a.__parent._validationError instanceof ValidationError);
+      assert.equal(a.__parent.errors['jsconf.ar.0.work'].name, 'ValidatorError');
+      assert.equal(a.__parent._validationError.toString(), 'ValidationError: Validator "required" failed for path test, Validator failed for path work');
       done();
     });
   });
@@ -119,7 +119,7 @@ describe('types.document', function(){
     assert.strictEqual(true, m.__id !== m2.__id);
   });
 
-  it('Subdocument#remove', function (done) {
+  it('Subdocument#remove (gh-531)', function (done) {
     var db = start();
     var Movie = db.model('Movie');
 
@@ -134,7 +134,6 @@ describe('types.document', function(){
     super8.ratings.push({ stars: 8, _id: id2 });
     super8.ratings.push({ stars: 7, _id: id3 });
     super8.ratings.push({ stars: 6, _id: id4 });
-    //console.error('pre save', super8);
 
     super8.save(function (err) {
       assert.ifError(err);
@@ -162,25 +161,30 @@ describe('types.document', function(){
           assert.equal(movie.ratings.id(id3).stars.valueOf(), 4);
           assert.equal(movie.ratings.id(id4).stars.valueOf(), 3);
 
-          //console.error('after save + findbyId', movie);
-
           movie.ratings.id(id1).stars = 2;
           movie.ratings.id(id3).remove();
           movie.ratings.id(id4).stars = 1;
-
-          //console.error('after modified', movie);
 
           movie.save(function (err) {
             assert.ifError(err);
 
             Movie.findById(super8._id, function (err, movie) {
-              db.close();
               assert.ifError(err);
               assert.equal(movie.ratings.length,2);
               assert.equal(movie.ratings.id(id1).stars.valueOf(), 2);
               assert.equal(movie.ratings.id(id4).stars.valueOf(), 1);
-              //console.error('after resave + findById', movie);
-              done();
+
+              // gh-531
+              movie.ratings[0].remove();
+              movie.ratings[0].remove();
+              movie.save(function (err) {
+                Movie.findById(super8._id, function (err, movie) {
+                  db.close();
+                  assert.ifError(err);
+                  assert.equal(0, movie.ratings.length);
+                  done();
+                });
+              });
             });
           });
         });
