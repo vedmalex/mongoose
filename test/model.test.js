@@ -1115,15 +1115,35 @@ describe('model', function(){
         assert.ok(err instanceof ValidationError);
         assert.ok(err.errors['items.0.subs.0.required'] instanceof ValidatorError);
         assert.equal(err.errors['items.0.subs.0.required'].message,'Validator "required" failed for path required');
-        assert.ok(err.errors['items.0.required'] instanceof ValidatorError);
-        assert.equal(err.errors['items.0.required'].message,'Validator "required" failed for path required');
+        assert.ok(post.errors['items.0.subs.0.required'] instanceof ValidatorError);
+        assert.equal(post.errors['items.0.subs.0.required'].message,'Validator "required" failed for path required');
 
-        post.get('items')[0].set('required', true);
+        assert.ok(!err.errors['items.0.required']);
+        assert.ok(!err.errors['items.0.required']);
+        assert.ok(!post.errors['items.0.required']);
+        assert.ok(!post.errors['items.0.required']);
+
         post.items[0].subs[0].set('required', true);
+        assert.equal(undefined, post._validationError);
+
         post.save(function(err){
-          db.close();
-          assert.ifError(err);
-          done();
+          assert.ok(err);
+          assert.ok(err.errors);
+          assert.ok(err.errors['items.0.required'] instanceof ValidatorError);
+          assert.equal(err.errors['items.0.required'].message,'Validator "required" failed for path required');
+
+          assert.ok(!err.errors['items.0.subs.0.required']);
+          assert.ok(!err.errors['items.0.subs.0.required']);
+          assert.ok(!post.errors['items.0.subs.0.required']);
+          assert.ok(!post.errors['items.0.subs.0.required']);
+
+          post.get('items')[0].set('required', true);
+          post.save(function(err){
+            db.close();
+            assert.ok(!post.errors);
+            assert.ifError(err);
+            done();
+          });
         });
       });
     });
@@ -2622,6 +2642,38 @@ describe('model', function(){
         });
       })
     })
+
+    it('updating an embedded document in an embedded array with set call', function(done) {
+      var db = start(),
+        BlogPost = db.model('BlogPost', collection);
+
+      BlogPost.create({
+        comments: [{
+          title: 'before-change'
+        }]
+      }, function(err, post) {
+        assert.ifError(err);
+        BlogPost.findById(post._id, function(err, found) {
+          assert.ifError(err);
+          assert.equal('before-change', found.comments[0].title);
+          var subDoc = [{
+            _id: found.comments[0]._id,
+            title: 'after-change'
+          }];
+          found.set('comments', subDoc);
+
+          found.save(function(err) {
+            assert.ifError(err);
+            BlogPost.findById(found._id, function(err, updated) {
+              db.close();
+              assert.ifError(err);
+              assert.equal('after-change', updated.comments[0].title);
+              done();
+            });
+          });
+        });
+      });
+    });
   });
 
   it('updating an embedded document in an embedded array (gh-255)', function(done){
@@ -3833,7 +3885,26 @@ describe('model', function(){
         new DefaultErr().save();
       })
 
-      it('should throw error when nothing is listening to db errors', function(done){
+      it('should emit error on its Model when there are listeners', function(done){
+        var db = start();
+
+        var DefaultErrSchema = new Schema({});
+        DefaultErrSchema.pre('save', function (next) {
+          next(new Error);
+        });
+
+        var DefaultErr = db.model('DefaultErr3', DefaultErrSchema, 'default_err_' + random());
+
+        DefaultErr.on('error', function (err) {
+          db.close();
+          assert.ok(err instanceof Error);
+          done();
+        });
+
+        new DefaultErr().save();
+      })
+
+      it('should throw error when nothing is listening to db or Model errors', function(done){
         var db = start({ noErrorListener: 1 });
 
         var DefaultErrSchema = new Schema({});
@@ -3841,7 +3912,7 @@ describe('model', function(){
           try {
             next(new Error);
           } catch (error) {
-            // throws b/c nothing is listening to the error event
+            // throws b/c nothing is listening to the Model or db error event
             db.close();
             assert.ok(error instanceof Error);
             done();
