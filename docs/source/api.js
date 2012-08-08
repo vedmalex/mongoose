@@ -3,14 +3,16 @@
  */
 
 var fs = require('fs');
+var link = require('../helpers/linktype');
 var hl = require('highlight.js')
-var link = require('../linktype');
+var md = require('markdown')
 
 module.exports = { docs: [], github: 'https://github.com/LearnBoost/mongoose/tree/' }
 var out = module.exports.docs;
 
 var docs = fs.readFileSync(__dirname + '/_docs', 'utf8');
 parse(docs);
+order(out);
 
 function parse (docs) {
   docs.split(/^### /gm).forEach(function (chunk) {
@@ -22,6 +24,8 @@ function parse (docs) {
 
     if (!title || !(title = title.trim()))
       throw new Error('missing title');
+
+    title = title.replace(/^lib\//, '');
 
     var json = JSON.parse(chunk[2]);
 
@@ -113,14 +117,17 @@ function parse (docs) {
           comment.see.unshift(tag);
           comment.tags.splice(i, 1);
           break;
+        case 'event':
+          var str = tag.string.replace(/\\n/g, '\n');
+          tag.string = md.parse(str).replace(/\n/g, '\\n').replace(/'/g, '&#39;');
+          comment.events || (comment.events = []);
+          comment.events.unshift(tag);
+          comment.tags.splice(i, 1);
         }
       }
 
       if (!prop) {
-        //if ('function' == comment.ctx.type)
-          //constructor = comment;
-        //else
-          methods.push(comment);
+        methods.push(comment);
       }
     });
 
@@ -153,7 +160,6 @@ function parse (docs) {
         statics.unshift(stat);
       }
     }
-
 
     out.push({
         title: title
@@ -197,4 +203,13 @@ function fix (str) {
           + hl.highlight(code[1], code[2]).value.trim()
           + $3;
   });
+}
+
+function order (docs) {
+  // want index first
+  for (var i = 0; i < docs.length; ++i) {
+    if ('index.js' == docs[i].title) {
+      docs.unshift(docs.splice(i, 1)[0]);
+    }
+  }
 }

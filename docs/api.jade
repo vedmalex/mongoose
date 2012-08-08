@@ -46,23 +46,24 @@ html(lang='en')
         border-radius: 3px;
         font-size: 13px;
         font-family: Monaco;
-        /*text-shadow: 1px 2px 2px #555;*/
       }
       pre code {
         border: 0 none;
         padding: 1.2em;
         overflow-x: auto;
       }
-      h3 { padding-top: 35px; }
+      h3 {
+        padding: 20px 15px;
+        margin-left: -15px;
+      }
       h3 code {
         font-weight: normal;
       }
       hr {
-        display: none;
         height: 1px;
         border: 0 none;
         padding: 0;
-        margin: 90px 0;
+        margin: 60px 0;
         background: -webkit-gradient(linear, left top, right top, from(rgba(57, 172, 57, 0.0)), color-stop(0.5, rgba(57, 172, 57, 0.33)), to(rgba(57, 172, 57, 0.0)))
       }
       .doclinks hr {
@@ -103,12 +104,15 @@ html(lang='en')
         border-right: 1px solid #ddd;
         background: -webkit-gradient(linear, left top, right top, from(transparent), color-stop(0.92, transparent), color-stop(0.9201, rgba(172,172,172, 0.0)), to(rgba(172,172,172, 0.4))), transparent;
       }
-      #docs {
+      #links hr {
+        margin: 32px 0;
+      }
+      #content {
         padding: 0;
         margin: 0 0 30px 230px;
         overflow-x: hidden;
       }
-      #docs .controls {
+      #content .controls {
         padding: 5px 15px 5px 10px;
         position: fixed;
         background: #fff;
@@ -122,18 +126,21 @@ html(lang='en')
         -webkit-transition-duration: 0.15s;
         -webkit-transition-timing-function: ease-out;
       }
-      #docs .controls:hover {
+      #content .controls:hover {
         opacity: .9;
       }
-      #docs p {
+      #content p {
         word-wrap: break-word;
       }
-      #docs > ul {
+      #content > ul {
         margin: 0;
         padding: 0;
       }
       .private {
         display: none;
+      }
+      .section {
+        font-size: 15px;
       }
       .doclinks li.private a:before,
       .doclinks .module.private a:before,
@@ -150,7 +157,7 @@ html(lang='en')
         display: inline-block;
         margin-right: 5px;
       }
-      #docs .private h3:after {
+      #content .private h3:after {
         content: "private";
         background: #333;
         color: #fff;
@@ -174,8 +181,11 @@ html(lang='en')
       .module > * {
         max-width: 700px;
       }
-      .item {
-        margin-bottom: 175px;
+      .item:last-child {
+        margin-bottom: 90px;
+      }
+      .item:last-child > hr {
+        display: none;
       }
       .item h3 a {
         color: #333;
@@ -219,6 +229,9 @@ html(lang='en')
           background: -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(0.92, transparent), color-stop(0.9201, rgba(172,172,172, 0.0)), to(rgba(172,172,172, 0.4))), transparent;
           padding: 15px 0;
         }
+        #links hr {
+          display: none;
+        }
         #links, #links ul, #links li { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
         #links ul { padding: 0 10px 0 0; }
         #links li {
@@ -233,11 +246,12 @@ html(lang='en')
         .doclinks {
           display: none;
         }
-        #docs { margin-left: 0; }
+        #content { margin-left: 0; }
         .module {
           padding-left: 5px;
           border-width: 3px;
         }
+        .controls { display: none; }
       }
   body.api
     a#forkbanner(href="http://github.com/learnboost/mongoose")
@@ -245,26 +259,14 @@ html(lang='en')
     #links
       #header
         h1
-          a(href="/index.html")
+          a(href="../index.html")
             .mongoose Mongoose
-      ul
-        li.home
-          a(href="/index.html") home
-        li.plugins plugins
-        li.changelog
-          a(href="http://github.com/learnboost/mongoose/tree/master/History.md") change log
-        li.support
-          a(href="/index.html#support") support
-        li.fork
-          a(href="http://github.com/learnboost/mongoose") fork
-        li.guide guide
-        li.contrib
-          a(href="http://github.com/learnboost/mongoose/contributors") contributors
+      include includes/nav
       hr
       .doclinks
         each item in docs
           .file(class=item.hasPublic ? '' : 'private')
-            a.section(href='#' + item.title)= item.title
+            a.section(href='#' + item.title.replace(/[\.\/#]/g, '-'))= item.title
             ul
               each method in item.methods
                 if method.ctx && !method.ignore
@@ -280,7 +282,7 @@ html(lang='en')
                     a(href='#' + url)= method.ctx.name
               each stat in item.statics
                 if stat.ctx && !stat.ignore
-                  li
+                  li(class= stat.isPrivate ? 'private' : '')
                     case stat.ctx.type
                       when 'method'
                         id = stat.ctx.receiver + '-' + stat.ctx.name
@@ -292,12 +294,12 @@ html(lang='en')
                     a(href='#' + url)= stat.ctx.name
               each property in item.props
                 if property.ctx && !property.ignore
-                  li
+                  li(class= property.isPrivate ? 'private' : '')
                     construct = property.ctx.receiver || property.ctx.constructor
                     link = href(construct) + '-' + href(property.ctx.name)
                     url = href(klass(item.title) + '_' + link)
                     a(href='#' + url)= property.ctx.name
-    #docs
+    #content
       .controls
         label
           input(type='checkbox')
@@ -305,9 +307,9 @@ html(lang='en')
       ul
         each item in docs
           li.module(class=item.hasPublic ? '' : 'private')
-            a(href=github + package.version + '/' + item.title)= item.title
+            a(href=github + package.version + '/' + item.title, id=item.title.replace(/[\.\/#]/g, '-'))= item.title
             each method in item.methods
-              div.item.method(class= method.isPrivate ? 'private' : '')
+              div.item.method(class= method.isPrivate ? 'private' : 'public')
                 if method.ctx
                   case method.ctx.type
                     when 'method'
@@ -329,7 +331,7 @@ html(lang='en')
                           | , 
                       | )
                 else
-                  - console.log('\nmissing method name', method);
+                  - // console.log('\nmissing method name', method);
                   h3 MISSING method name
                 != method.description.summary
                 if method.code
@@ -342,8 +344,6 @@ html(lang='en')
                     ul
                       each tag in method.params
                         li
-                          - if (!tag.name)
-                            - console.log(tag)
                           code= tag.name
                           if tag.types && tag.types.length
                             span.types
@@ -373,6 +373,13 @@ html(lang='en')
                     ul
                       li
                         != method.inherits
+                if method.events && method.events.length
+                  .events
+                    h4 Events:
+                    ul
+                      each event in method.events
+                        li
+                          != event.string
                 if method.see.length
                   .see
                     h4 See:
@@ -383,9 +390,9 @@ html(lang='en')
                           a(href=url, title=see.title || see.local)= see.title || see.url || see.local
                 div.description
                   != method.description.body
-              hr(class= method.isPrivate ? 'private' : '')
+                hr(class= method.isPrivate ? 'private' : '')
             each stat in item.statics
-              div.item.static(class= stat.isPrivate ? 'private' : '')
+              div.item.static(class= stat.isPrivate ? 'private' : 'public')
                 if stat.ctx
                   case stat.ctx.type
                     when 'method'
@@ -411,7 +418,7 @@ html(lang='en')
                             | , 
                         | )
                 else
-                  - console.log('\nmissing static name', stat);
+                  - // console.log('\nmissing static name', stat);
                   h3 MISSING stat name
                 != stat.description.summary
                 if stat.code
@@ -425,7 +432,7 @@ html(lang='en')
                       each tag in stat.params
                         li
                           - if (!tag.name)
-                            - console.log(tag)
+                            - // console.log(tag)
                           code= tag.name
                           if tag.types && tag.types.length
                             span.types
@@ -462,11 +469,11 @@ html(lang='en')
                       each see in stat.see
                         li
                           url = see.url || see.local
-                          a(href=href, title=see.title || see.local)= see.title || see.url || see.local
+                          a(href=url, title=see.title || see.local)= see.title || see.url || see.local
                 != stat.description.body
-              hr(class= stat.isPrivate ? 'private' : '')
+                hr(class= stat.isPrivate ? 'private' : '')
             each property in item.props
-              div.item.property(class= property.ignore || property.isPrivate ? 'private' : '')
+              div.item.property(class= property.ignore || property.isPrivate ? 'private' : 'public')
                 construct = property.ctx.receiver || property.ctx.constructor
                 link = href(construct) + '-' + href(property.ctx.name)
                 url = href(klass(item.title) + '_' + link)
@@ -488,7 +495,7 @@ html(lang='en')
                               | , 
                           | &gt; 
                         span= property.return.description
-              hr
+                hr(class= property.isPrivate ? 'private' : '')
     script.
       document.body.className = 'load';
     include includes/googleanalytics
@@ -497,6 +504,6 @@ html(lang='en')
       $(".module").on("click", ".showcode", function (e) {
         $(this).closest(".item").find(".sourcecode").first().toggle();
       });
-      $("#docs .controls input").on("click", function (e) {
+      $("#content .controls input").on("click", function (e) {
         $(".private").toggle()
       })
