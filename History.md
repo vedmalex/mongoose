@@ -1,4 +1,49 @@
 
+3.1.1 / 2012-08-31
+==================
+
+  * updated; driver to 1.1.6
+
+3.1.0 / 2012-08-29
+==================
+
+  * changed; fixed; directly setting nested objects now overwrites entire object (previously incorrectly merged them)
+  * added; read pref support (mongodb 2.2) 205a709c
+  * added; aggregate support (mongodb 2.2) f3a5bd3d
+  * added; virtual {g,s}etter introspection (#1070)
+  * updated; docs [brettz9](https://github.com/brettz9)
+  * updated; driver to 1.1.5
+  * fixed; retain virtual setter return values (#1069)
+
+3.0.3 / 2012-08-23
+==================
+
+  * fixed; use of nested paths beginning w/ numbers #1062
+  * fixed; query population edge case #1053 #1055 [jfremy](https://github.com/jfremy)
+  * fixed; simultaneous top and sub level array modifications #1073
+  * added; id and _id schema option aliases + tests
+  * improve debug formatting to allow copy/paste logged queries into mongo shell [eknkc](https://github.com/eknkc)
+  * docs
+
+3.0.2 / 2012-08-17
+==================
+
+  * added; missing support for v3 sort/select syntax to findAndModify helpers (#1058)
+  * fixed; replset fullsetup event emission
+  * fixed; reconnected event for replsets
+  * fixed; server reconnection setting discovery
+  * fixed; compat with non-schema path props using positional notation (#1048)
+  * fixed; setter/casting order (#665)
+  * docs; updated
+
+3.0.1 / 2012-08-11
+==================
+
+  * fixed; throw Error on bad validators (1044)
+  * fixed; typo in EmbeddedDocument#parentArray [lackac]
+  * fixed; repair mongoose.SchemaTypes alias
+  * updated; docs
+
 3.0.0 / 2012-08-07
 ==================
 

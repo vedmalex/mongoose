@@ -5,7 +5,7 @@ DOCS = $(DOCS_:.js=.json)
 DOCFILE = docs/source/_docs
 
 test:
-	@./node_modules/.bin/mocha --reporter list $(TESTFLAGS) $(TESTS)
+	@./node_modules/.bin/mocha $(T) $(TESTS)
 	@node test/dropdb.js
 
 docs: docclean gendocs
@@ -20,7 +20,7 @@ $(DOCFILE): $(DOCS)
 	./node_modules/dox/bin/dox < $^ >> $(DOCFILE)
 
 site:
-	node website.js --watch && node static.js
+	node website.js && node static.js
 
 docclean:
 	rm -f ./docs/*.{1,html,json}

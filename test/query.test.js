@@ -840,7 +840,7 @@ describe('Query', function(){
     it('should retain key order', function(){
       // this is important for query hints
       var hint = { x: 1, y: 1, z: 1 };
-      var a = JSON.stringify({ hint: hint, safe: true});
+      var a = JSON.stringify({ hint: hint, batchSize: 1000, safe: true});
 
       var q = new Query;
       q.hint(hint);
@@ -928,6 +928,92 @@ describe('Query', function(){
         assert.equal(query.options.batchSize,10);
       });
     })
+
+    describe('read', function(){
+      var P = mongoose.mongo.ReadPreference;
+
+      describe('without tags', function(){
+        it('works', function(){
+          var query = new Query();
+          query.read('primary');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'primary');
+
+          query.read('p');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'primary');
+
+          query.read('primaryPrefered');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'primaryPrefered');
+
+          query.read('pp');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'primaryPrefered');
+
+          query.read('secondary');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'secondary');
+
+          query.read('s');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'secondary');
+
+          query.read('secondaryPrefered');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'secondaryPrefered');
+
+          query.read('sp');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'secondaryPrefered');
+
+          query.read('nearest');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'nearest');
+
+          query.read('n');
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'nearest');
+        });
+      })
+
+      describe('with tags', function(){
+        it('works', function(){
+          var query = new Query();
+          var tags = [{ dc: 'sf', s: 1}, { dc: 'jp', s: 2 }]
+
+          query.read('p', tags);
+          assert.ok(query.options.readPreference instanceof P);
+          assert.equal(query.options.readPreference.mode, 'primary');
+          assert.ok(Array.isArray(query.options.readPreference.tags));
+          assert.equal(query.options.readPreference.tags[0].dc, 'sf');
+          assert.equal(query.options.readPreference.tags[0].s, 1);
+          assert.equal(query.options.readPreference.tags[1].dc, 'jp');
+          assert.equal(query.options.readPreference.tags[1].s, 2);
+        });
+      })
+
+      describe('inherits its models schema read option', function(){
+        var schema, M;
+        before(function () {
+          schema = new Schema({}, { read: 'p' });
+          M = mongoose.model('schemaOptionReadPrefWithQuery', schema);
+        })
+
+        it('if not set in query', function(){
+          var options = M.where()._optionsForExec(M);
+          assert.ok(options.readPreference instanceof P);
+          assert.equal(options.readPreference.mode, 'primary');
+        })
+
+        it('if set in query', function(){
+          var options = M.where().read('s')._optionsForExec(M);
+          assert.ok(options.readPreference instanceof P);
+          assert.equal(options.readPreference.mode, 'secondary');
+        })
+
+      })
+    })
   })
 
   describe('setOptions', function(){
@@ -941,6 +1027,7 @@ describe('Query', function(){
       q.setOptions({ sort: '-blah' });
       q.setOptions({ sort: {'woot': -1} });
       q.setOptions({ hint: { index1: 1, index2: -1 }});
+      q.setOptions({ read: ['s', [{dc:'eu'}]]});
 
       assert.equal(q.options.thing, 'cat');
       assert.deepEqual(q.options.populate.fans, { fields: undefined, conditions: undefined, options: undefined, model: undefined });
@@ -954,6 +1041,8 @@ describe('Query', function(){
       assert.equal(q.options.sort[1][1], -1);
       assert.equal(q.options.hint.index1, 1);
       assert.equal(q.options.hint.index2, -1);
+      assert.equal(q.options.readPreference.mode, 'secondary');
+      assert.equal(q.options.readPreference.tags[0].dc, 'eu');
 
       var db = start();
       var Product = db.model('Product', 'Product_setOptions_test');
@@ -963,7 +1052,7 @@ describe('Query', function(){
 
         assert.ifError(err);
 
-        Product.find().setOptions({ limit: 1, sort: {_id: -1} }).exec(function (err, docs) {
+        Product.find().setOptions({ limit: 1, sort: {_id: -1}, read: 'n' }).exec(function (err, docs) {
           db.close();
           assert.ifError(err);
           assert.equal(docs.length, 1);
