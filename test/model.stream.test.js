@@ -71,7 +71,9 @@ describe('cursor stream:', function(){
         return cb();
       }
 
-      if (++i === 3) {
+      ++i;
+
+      if (i === 3) {
         assert.equal(false, stream.paused);
         stream.pause();
         assert.equal(true, stream.paused);
@@ -83,6 +85,11 @@ describe('cursor stream:', function(){
           stream.resume();
           assert.equal(false, stream.paused);
         }, 20);
+      } else if (i === 4) {
+        stream.pause();
+        assert.equal(true, stream.paused);
+        stream.resume();
+        assert.equal(false, stream.paused);
       }
     });
 
@@ -249,6 +256,21 @@ describe('cursor stream:', function(){
     stream.on('data', function (doc) {
       assert.strictEqual(false, doc instanceof mongoose.Document);
       i++;
+
+      if (1 === i) {
+        stream.pause();
+        assert.equal(true, stream.paused);
+        stream.resume();
+        assert.equal(false, stream.paused);
+      } else if (2 === i) {
+        stream.pause();
+        assert.equal(true, stream.paused);
+        process.nextTick(function () {
+          assert.equal(true, stream.paused);
+          stream.resume();
+          assert.equal(false, stream.paused);
+        })
+      }
     });
 
     stream.on('error', function (er) {
@@ -270,4 +292,41 @@ describe('cursor stream:', function(){
       done();
     }
   });
+
+  it('supports $elemMatch with $in (gh-1091)', function(done){
+    this.timeout(3000);
+
+    var db = start()
+
+    var postSchema = new Schema({
+        ids: [{type: Schema.ObjectId}]
+      , title: String
+    });
+
+    var B = db.model('gh-1100-stream', postSchema);
+    var _id1 = new mongoose.Types.ObjectId;
+    var _id2 = new mongoose.Types.ObjectId;
+
+    B.create({ ids: [_id1, _id2] }, function (err, doc) {
+      assert.ifError(err);
+
+      var error;
+
+      var stream = B.find({ _id: doc._id })
+        .select({ title: 1, ids: { $elemMatch: { $in: [_id2.toString()] }}})
+        .stream();
+
+      stream.on('data', function (found) {
+        assert.equal(found.id, doc.id);
+        assert.equal(1, found.ids.length);
+        assert.equal(_id2.toString(), found.ids[0].toString());
+      })
+      .on('error', function (err) {
+        error = err;
+      })
+      .on('close', function () {
+        done(error);
+      })
+    })
+  })
 });

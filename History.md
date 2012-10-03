@@ -1,4 +1,44 @@
 
+3.2.1 / 2012-09-28
+==================
+
+  * fixed; remove query batchSize option default of 1000 https://github.com/learnboost/mongoose/commit/3edaa8651
+  * docs; updated
+  * website; updated
+
+3.2.0 / 2012-09-27
+==================
+
+  * added; direct array index assignment with casting support `doc.array.set(index, value)`
+  * fixed; QueryStream#resume within same tick as pause() #1116
+  * fixed; default value validatation #1109
+  * fixed; array splice() not casting #1123
+  * fixed; default array construction edge case #1108
+  * fixed; query casting for inequalities in arrays #1101 [dpatti](https://github.com/dpatti)
+  * tests; added
+  * website; more documentation
+  * website; fixed layout issue #1111 [SlashmanX](https://github.com/SlashmanX)
+  * website; refactored [guille](https://github.com/guille)
+
+3.1.2 / 2012-09-10
+==================
+
+  * added; ReadPreferrence schema option #1097
+  * updated; driver to 1.1.7
+  * updated; default query batchSize to 1000
+  * fixed; we now cast the mapReduce query option #1095
+  * fixed; $elemMatch+$in with field selection #1091
+  * fixed; properly cast $elemMatch+$in conditions #1100
+  * fixed; default field application of subdocs #1027
+  * fixed; querystream prematurely dying #1092
+  * fixed; querystream never resumes when paused at getMore boundries #1092
+  * fixed; querystream occasionally emits data events after destroy #1092
+  * fixed; remove unnecessary ObjectId creation in querystream
+  * fixed; allow ne(boolean) again #1093
+  * docs; add populate/field selection syntax notes
+  * docs; add toObject/toJSON options detail
+  * docs; `read` schema option
+
 3.1.1 / 2012-08-31
 ==================
 
