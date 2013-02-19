@@ -10,12 +10,11 @@ var start = require('./common')
   , Document = mongoose.Document
   , SchemaType = mongoose.SchemaType
   , VirtualType = mongoose.VirtualType
-  , ObjectId = Schema.ObjectId
-  , ValidatorError = SchemaType.ValidatorError
-  , CastError = SchemaType.CastError
+  , ValidatorError = mongoose.Error.ValidatorError
   , SchemaTypes = Schema.Types
-  , DocumentObjectId = mongoose.Types.ObjectId
+  , ObjectId = SchemaTypes.ObjectId
   , Mixed = SchemaTypes.Mixed
+  , DocumentObjectId = mongoose.Types.ObjectId
   , MongooseArray = mongoose.Types.Array
   , ReadPref = require('mongodb').ReadPreference
   , vm = require('vm')
@@ -588,7 +587,7 @@ describe('schema', function(){
         var M = db.model('castingStringArrayWithUndefined', schema);
         M.find({ arr: { $in: [undefined] }}, function (err) {
           db.close();
-          assert.equal(err && err.message, 'Cast to string failed for value "undefined"');
+          assert.equal(err && err.message, 'Cast to string failed for value "undefined" at path "arr"');
           done();
         });
       });
@@ -1125,7 +1124,7 @@ describe('schema', function(){
       var Tobi = new Schema();
 
       assert.equal('object', typeof Tobi.options);
-      assert.equal(true, Tobi.options.safe);
+      assert.equal(undefined, Tobi.options.safe);
       assert.equal(true, Tobi.options.strict);
       assert.equal(false, Tobi.options.capped);
       assert.equal('__v', Tobi.options.versionKey);
@@ -1143,7 +1142,7 @@ describe('schema', function(){
       assert.equal('users', Tobi.options.collection);
 
       assert.equal('b', Tobi.options.a);
-      assert.equal(Tobi.options.safe, false);
+      assert.deepEqual(Tobi.options.safe, { w: 0 });
       assert.equal(null, Tobi.options.read);
 
       var tags = [{ x: 1 }];

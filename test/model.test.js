@@ -10,10 +10,10 @@ var start = require('./common')
   , Query = require('../lib/query')
   , Schema = mongoose.Schema
   , SchemaType = mongoose.SchemaType
-  , CastError = SchemaType.CastError
-  , ValidatorError = SchemaType.ValidatorError
-  , ValidationError = mongoose.Document.ValidationError
-  , ObjectId = Schema.ObjectId
+  , CastError = mongoose.Error.CastError
+  , ValidatorError = mongoose.Error.ValidatorError
+  , ValidationError = mongoose.Error.ValidationError
+  , ObjectId = Schema.Types.ObjectId
   , DocumentObjectId = mongoose.Types.ObjectId
   , DocumentArray = mongoose.Types.DocumentArray
   , EmbeddedDocument = mongoose.Types.Embedded
@@ -1697,6 +1697,30 @@ describe('model', function(){
         });
       });
     });
+
+    describe('when called multiple times', function(){
+      it('always executes the passed callback gh-1210', function(done){
+        var db = start()
+          , collection = 'blogposts_' + random()
+          , BlogPost = db.model('BlogPost', collection)
+          , post = new BlogPost();
+
+        post.save(function (err) {
+          assert.ifError(err);
+
+          var pending = 2;
+
+          post.remove(function () {
+            if (--pending) return;
+            done();
+          });
+          post.remove(function () {
+            if (--pending) return;
+            done();
+          });
+        });
+      })
+    })
   });
 
   describe('getters', function(){
@@ -2345,8 +2369,7 @@ describe('model', function(){
           }
         });
 
-    mongoose.model('NestedPushes', schema);
-    var Temp = db.model('NestedPushes', collection);
+    var Temp = db.model('NestedPushes', schema, collection);
 
     Temp.create({}, function (err, t) {
       assert.ifError(err);
@@ -2375,8 +2398,7 @@ describe('model', function(){
           }
         });
 
-    mongoose.model('NestedPushes', schema);
-    var Temp = db.model('NestedPushes', collection);
+    var Temp = db.model('NestedPushes', schema, collection);
 
     Temp.create({nested: {nums: [1, 2, 3, 4, 5]}}, function (err, t) {
       assert.ifError(err);
@@ -2396,8 +2418,7 @@ describe('model', function(){
           }
         });
 
-    mongoose.model('NestedPushes', schema);
-    var Temp = db.model('NestedPushes', collection);
+    var Temp = db.model('NestedPushes', schema, collection);
 
     Temp.create({nested: {nums: [1, 2, 3, 4, 5]}}, function (err, t) {
       assert.ifError(err);

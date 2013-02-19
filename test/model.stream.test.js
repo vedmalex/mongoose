@@ -11,8 +11,7 @@ var start = require('./common')
   , Query = require('../lib/query')
   , Schema = mongoose.Schema
   , SchemaType = mongoose.SchemaType
-  , CastError = SchemaType.CastError
-  , ObjectId = Schema.ObjectId
+  , ObjectId = Schema.Types.ObjectId
   , MongooseBuffer = mongoose.Types.Buffer
   , DocumentObjectId = mongoose.Types.ObjectId
   , fs = require('fs')
@@ -30,7 +29,7 @@ var Person = new Schema({
 mongoose.model('PersonForStream', Person);
 var collection = 'personforstream_' + random();
 
-describe('cursor stream:', function(){
+describe('query stream:', function(){
   before(function (done) {
     var db = start()
       , P = db.model('PersonForStream', collection)

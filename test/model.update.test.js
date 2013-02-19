@@ -10,10 +10,7 @@ var start = require('./common')
   , Query = require('../lib/query')
   , Schema = mongoose.Schema
   , SchemaType = mongoose.SchemaType
-  , CastError = SchemaType.CastError
-  , ValidatorError = SchemaType.ValidatorError
-  , ValidationError = mongoose.Document.ValidationError
-  , ObjectId = Schema.ObjectId
+  , ObjectId = Schema.Types.ObjectId
   , DocumentObjectId = mongoose.Types.ObjectId
   , DocumentArray = mongoose.Types.DocumentArray
   , EmbeddedDocument = mongoose.Types.Embedded
@@ -173,7 +170,7 @@ describe('model: update:', function(){
 
           BlogPost.update({ _id: post._id }, update2, function (err) {
             assert.ok(err);
-            assert.ok(/^can't append to array using string field name \[body\]/.test(err.message));
+            assert.ok(/^can't append to array/.test(err.message));
             BlogPost.findById(post, function (err, p) {
               assert.ifError(err);
 

@@ -10,10 +10,7 @@ var start = require('./common')
   , Query = require('../lib/query')
   , Schema = mongoose.Schema
   , SchemaType = mongoose.SchemaType
-  , CastError = SchemaType.CastError
-  , ValidatorError = SchemaType.ValidatorError
-  , ValidationError = mongoose.Document.ValidationError
-  , ObjectId = Schema.ObjectId
+  , ObjectId = Schema.Types.ObjectId
   , DocumentObjectId = mongoose.Types.ObjectId
   , DocumentArray = mongoose.Types.DocumentArray
   , EmbeddedDocument = mongoose.Types.Embedded
@@ -67,13 +64,13 @@ BlogPost.static('woot', function(){
   return this;
 });
 
-var modelname = 'UpdateOneBlogPost'
+var modelname = 'RemoveOneBlogPost'
 mongoose.model(modelname, BlogPost);
 
-var collection = 'updateoneblogposts_' + random();
+var collection = 'removeoneblogposts_' + random();
 
 var strictSchema = new Schema({ name: String }, { strict: true });
-mongoose.model('UpdateOneStrictSchema', strictSchema);
+mongoose.model('RemoveOneStrictSchema', strictSchema);
 
 describe('model: findOneAndRemove:', function(){
   it('returns the original document', function(done){
