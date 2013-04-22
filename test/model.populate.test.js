@@ -2298,4 +2298,42 @@ describe('model: populate:', function(){
       });
     });
   })
+
+  it('maps results back to correct document (gh-????)', function(done){
+    var db = start();
+
+    var articleSchema = new Schema({
+        body: String,
+        mediaAttach: [{type: Schema.ObjectId, ref : '????-Media'}],
+        author: String
+    });
+    var Article = db.model('????-Article', articleSchema);
+
+    var mediaSchema = new Schema({
+        filename: String
+    });
+    var Media = db.model('????-Media', mediaSchema);
+
+    Media.create({ filename: 'one' }, function (err, media) {
+      assert.ifError(err);
+
+      Article.create(
+          {body: 'body1', author: 'a'}
+        , {body: 'body2', author: 'a', mediaAttach: [media._id]}
+        , {body: 'body3', author: 'a'}, function (err) {
+        if (err) return done(err);
+
+        Article.find().populate('mediaAttach').exec(function (err, docs) {
+          db.close();
+          assert.ifError(err);
+
+          var a1 = docs.filter(function(d){return 'body1' == d.body})[0];
+          assert.ok(Array.isArray(a1.mediaAttach));
+
+          done();
+        });
+      });
+    });
+  })
+
 });
