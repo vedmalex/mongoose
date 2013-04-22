@@ -1,7 +1,7 @@
 {
     "name": "mongoose"
   , "description": "Mongoose MongoDB ODM"
-  , "version": "3.6.5-pre"
+  , "version": "3.6.7-mod"
   , "author": "Guillermo Rauch <guillermo@learnboost.com>"
   , "keywords": ["mongodb", "mongoose", "orm", "data", "datastore", "nosql", "odm", "sql", "db", "database"]
   , "dependencies": {
@@ -33,7 +33,7 @@
     }
   , "repository": {
         "type": "git"
-      , "url": "git://github.com/LearnBoost/mongoose.git"
+      , "url": "git://github.com/vedmalex/mongoose.git"
     }
   , "homepage": "http://mongoosejs.com"
 }

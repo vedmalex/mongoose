@@ -2299,20 +2299,20 @@ describe('model: populate:', function(){
     });
   })
 
-  it('maps results back to correct document (gh-????)', function(done){
+  it('maps results back to correct document (gh-1453)', function(done){
     var db = start();
 
     var articleSchema = new Schema({
         body: String,
-        mediaAttach: [{type: Schema.ObjectId, ref : '????-Media'}],
+        mediaAttach: [{type: Schema.ObjectId, ref : '1453-Media'}],
         author: String
     });
-    var Article = db.model('????-Article', articleSchema);
-
+    var Article = db.model('1453-Article', articleSchema);
+    db.db.collection(Article.collection.name).insert({body:'body111', author:'a'}, function(){});
     var mediaSchema = new Schema({
         filename: String
     });
-    var Media = db.model('????-Media', mediaSchema);
+    var Media = db.model('1453-Media', mediaSchema);
 
     Media.create({ filename: 'one' }, function (err, media) {
       assert.ifError(err);
