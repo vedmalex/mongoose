@@ -87,7 +87,7 @@ Observation = mongoose.model('Observation', Schema({
 load.Observation = tbd.from({
   observationCode: 100,
   observationDesc: "{ type: String}",
-  observationGroup: "{ type: String}" 
+  observationGroup: "{ type: String}"
 }).make(dicCnt);
 
 Heart = mongoose.model('Heart', Schema({
@@ -112,7 +112,7 @@ load.Heart = tbd.from({
   murmur:"{ type: String}",
   npeHeart: true,
   rythm: "{ type: String}",
-  sounds: "{ type: String }" 
+  sounds: "{ type: String }"
 }).make(dicCnt);
 
 PereferialPulse = mongoose.model('PereferialPulse', Schema({
@@ -135,7 +135,7 @@ load.PereferialPulse = tbd.from({
   rightDP: "{ type: String}",
   rightTP: "{ type: String}",
   rigthFemoral: "{ type: String}",
-  rigthPopliteal: "{ type: String}" 
+  rigthPopliteal: "{ type: String}"
 }).make(dicCnt);
 
 Treatment = mongoose.model('Treatment', Schema({
@@ -148,7 +148,7 @@ Treatment = mongoose.model('Treatment', Schema({
 load.Treatment = tbd.from({
   notes: "{ type: String}",
   treatmentCode: "{ type: String}",
-  treatmentName: "{ type: String, required: true}" 
+  treatmentName: "{ type: String, required: true}"
 }).make(dicCnt);
 
 VitalSign = mongoose.model('VitalSign', Schema({
@@ -191,7 +191,7 @@ load.VitalSign = tbd.from({
   urineL:" { type: String}",
   urineN: "{ type: String}",
   urineP: "{ type: String}",
-  weight: "{ type: String}" 
+  weight: "{ type: String}"
 }).make(dicCnt);
 
 FluidsProgram = mongoose.model('FluidsProgram', Schema({
@@ -210,7 +210,7 @@ Allergy = mongoose.model('Allergy', Schema({
 
 load.Allergy = tbd.from({
   allergy: "{ type: String, required: true}",
-  notes: "{ type: String }" 
+  notes: "{ type: String }"
 }).make(dicCnt);
 
 Head = mongoose.model('Head', Schema({
@@ -249,7 +249,7 @@ load.Head = tbd.from({
   reactive: false,
   redness: "{ type: String}",
   secreting: false,
-  venousCongestion: false 
+  venousCongestion: false
 }).make(dicCnt);
 
 Sckeletal = mongoose.model('Sckeletal', Schema({
@@ -282,7 +282,7 @@ load.Sckeletal = tbd.from({
   npeLimbs: false,
   npeMusco: false,
   npeNeurologi: false,
-  reflexes: "{ type: String}" 
+  reflexes: "{ type: String}"
 }).make(dicCnt);
 
 Pulse = mongoose.model('Pulse', Schema({
@@ -303,7 +303,7 @@ Supplier = mongoose.model('Supplier', Schema({
 load.Supplier = tbd.from({
   supplierDescription:" { type: String}",
   supplierQty: 5,
-  supplierRemarks: "{ type: String }" 
+  supplierRemarks: "{ type: String }"
 }).make(dicCnt);
 
 Gastrointestinal = mongoose.model('Gastrointestinal', Schema({
@@ -318,7 +318,7 @@ load.Gastrointestinal = tbd.from({
   leftKidney: "{ type: String}",
   liver: "{ type: String}",
   rightKidney: "{ type: String}",
-  spleen: "{ type: String }" 
+  spleen: "{ type: String }"
 }).make(dicCnt);
 
 Ecg = mongoose.model('Ecg', Schema({
@@ -337,7 +337,7 @@ load.Ecg = tbd.from({
   ecgIschemia: "{ type: String}",
   ecgRate: "{ type: String}",
   ecgRythem: "{ type: String}",
-  generalCondition:" { type: String }" 
+  generalCondition:" { type: String }"
 }).make(dicCnt);
 
 Diagnose = mongoose.model('Diagnose', Schema({
@@ -352,7 +352,7 @@ load.Diagnose = tbd.from({
   diagNotes: "{ type: String}",
   diagnoseGroup: "{ type: String}",
   diagnoseName: "{ type: String, required: true}",
-  idDiagnose: "{ type: String }" 
+  idDiagnose: "{ type: String }"
 }).make(dicCnt);
 
 Conclusion = mongoose.model('Conclusion', Schema({
@@ -383,7 +383,7 @@ load.Conclusion = tbd.from({
   nowData: new Date(),
   periodical: "{ type: String}",
   presentedTo: "{ type: String}",
-  stampImage: "{ type: String }" 
+  stampImage: "{ type: String }"
 }).make(dicCnt);
 
 
