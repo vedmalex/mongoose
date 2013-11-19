@@ -70,6 +70,7 @@ BlogPost.static('woot', function(){
 });
 
 mongoose.model('BlogPost', BlogPost);
+var bpSchema = BlogPost;
 
 var collection = 'blogposts_' + random();
 
@@ -928,8 +929,8 @@ describe('Model', function(){
         assert.ok(err instanceof MongooseError);
         assert.ok(err instanceof ValidationError);
         assert.ok(err.errors.simple instanceof ValidatorError);
-        assert.equal(err.errors.simple.message,'Validator "must be abc" failed for path simple with value ``');
-        assert.equal(post.errors.simple.message,'Validator "must be abc" failed for path simple with value ``');
+        assert.equal(err.errors.simple.message,'must be abc');
+        assert.equal(post.errors.simple.message,'must be abc');
 
         post.set('simple', 'abc');
         post.save(function(err){
@@ -948,11 +949,11 @@ describe('Model', function(){
       var IntrospectionValidation = db.model('IntrospectionValidation', IntrospectionValidationSchema, 'introspections_' + random());
       IntrospectionValidation.schema.path('name').validate(function (value) {
         return value.length < 2;
-      }, 'Name cannot be greater than 1 character');
+      }, 'Name cannot be greater than 1 character for path "{PATH}" with value `{VALUE}`');
       var doc = new IntrospectionValidation({name: 'hi'});
       doc.save( function (err) {
         db.close();
-        assert.equal(err.errors.name.message, "Validator \"Name cannot be greater than 1 character\" failed for path name with value `hi`");
+        assert.equal(err.errors.name.message, 'Name cannot be greater than 1 character for path "name" with value `hi`');
         assert.equal(err.name,"ValidationError");
         assert.equal(err.message,"Validation failed");
         done();
@@ -1010,17 +1011,17 @@ describe('Model', function(){
         assert.ok(err.errors.password instanceof ValidatorError);
         assert.ok(err.errors.email instanceof ValidatorError);
         assert.ok(err.errors.username instanceof ValidatorError);
-        assert.equal(err.errors.password.message,'Validator failed for path password with value `short`');
-        assert.equal(err.errors.email.message,'Validator failed for path email with value `too`');
-        assert.equal(err.errors.username.message,'Validator failed for path username with value `nope`');
+        assert.equal(err.errors.password.message,'Validator failed for path `password` with value `short`');
+        assert.equal(err.errors.email.message,'Validator failed for path `email` with value `too`');
+        assert.equal(err.errors.username.message,'Validator failed for path `username` with value `nope`');
 
         assert.equal(Object.keys(post.errors).length, 3);
         assert.ok(post.errors.password instanceof ValidatorError);
         assert.ok(post.errors.email instanceof ValidatorError);
         assert.ok(post.errors.username instanceof ValidatorError);
-        assert.equal(post.errors.password.message,'Validator failed for path password with value `short`');
-        assert.equal(post.errors.email.message,'Validator failed for path email with value `too`');
-        assert.equal(post.errors.username.message,'Validator failed for path username with value `nope`');
+        assert.equal(post.errors.password.message,'Validator failed for path `password` with value `short`');
+        assert.equal(post.errors.email.message,'Validator failed for path `email` with value `too`');
+        assert.equal(post.errors.username.message,'Validator failed for path `username` with value `nope`');
         done();
       });
     });
@@ -1136,9 +1137,9 @@ describe('Model', function(){
         assert.ok(err instanceof MongooseError);
         assert.ok(err instanceof ValidationError);
         assert.ok(err.errors['items.0.subs.0.required'] instanceof ValidatorError);
-        assert.equal(err.errors['items.0.subs.0.required'].message,'Validator "required" failed for path required with value ``');
+        assert.equal(err.errors['items.0.subs.0.required'].message,'Path `required` is required.');
         assert.ok(post.errors['items.0.subs.0.required'] instanceof ValidatorError);
-        assert.equal(post.errors['items.0.subs.0.required'].message,'Validator "required" failed for path required with value ``');
+        assert.equal(post.errors['items.0.subs.0.required'].message,'Path `required` is required.');
 
         assert.ok(!err.errors['items.0.required']);
         assert.ok(!err.errors['items.0.required']);
@@ -1152,7 +1153,7 @@ describe('Model', function(){
           assert.ok(err);
           assert.ok(err.errors);
           assert.ok(err.errors['items.0.required'] instanceof ValidatorError);
-          assert.equal(err.errors['items.0.required'].message,'Validator "required" failed for path required with value ``');
+          assert.equal(err.errors['items.0.required'].message,'Path `required` is required.');
 
           assert.ok(!err.errors['items.0.subs.0.required']);
           assert.ok(!err.errors['items.0.subs.0.required']);
@@ -1181,7 +1182,7 @@ describe('Model', function(){
           }, 5);
         };
         mongoose.model('TestAsyncValidation', new Schema({
-            async: { type: String, validate: [validator, 'async validator'] }
+            async: { type: String, validate: [validator, 'async validator failed for `{PATH}`'] }
         }));
 
         var db = start()
@@ -1194,7 +1195,7 @@ describe('Model', function(){
           assert.ok(err instanceof MongooseError);
           assert.ok(err instanceof ValidationError);
           assert.ok(err.errors.async instanceof ValidatorError);
-          assert.equal(err.errors.async.message,'Validator "async validator" failed for path async with value `test`');
+          assert.equal(err.errors.async.message,'async validator failed for `async`');
           assert.equal(true, executed);
           executed = false;
 
@@ -1376,7 +1377,7 @@ describe('Model', function(){
         post.save(function(err){
           assert.ok(err instanceof MongooseError);
           assert.ok(err instanceof ValidationError);
-          assert.equal(err.errors.baz.type,'bad');
+          assert.equal(err.errors.baz.type,'user defined');
           assert.equal(err.errors.baz.path,'baz');
 
           post.set('baz', 'good');
@@ -1418,7 +1419,7 @@ describe('Model', function(){
         post.save(function(err){
           assert.ok(err instanceof MongooseError);
           assert.ok(err instanceof ValidationError);
-          assert.equal(err.errors.prop.type,'bad');
+          assert.equal(err.errors.prop.type,'user defined');
           assert.equal(err.errors.prop.path,'prop');
 
           post.set('prop', 'good');
@@ -1472,13 +1473,15 @@ describe('Model', function(){
           assert.ok(err instanceof ValidationError);
           assert.equal(4, Object.keys(err.errors).length);
           assert.ok(err.errors.baz instanceof ValidatorError);
-          assert.equal(err.errors.baz.type,'bad');
+          assert.equal(err.errors.baz.type,'user defined');
           assert.equal(err.errors.baz.path,'baz');
           assert.ok(err.errors.abc instanceof ValidatorError);
-          assert.equal(err.errors.abc.type,'must be abc');
+          assert.equal(err.errors.abc.type,'user defined');
+          assert.equal(err.errors.abc.message,'must be abc');
           assert.equal(err.errors.abc.path,'abc');
           assert.ok(err.errors.test instanceof ValidatorError);
-          assert.equal(err.errors.test.type,'must also be abc');
+          assert.equal(err.errors.test.message,'must also be abc');
+          assert.equal(err.errors.test.type,'user defined');
           assert.equal(err.errors.test.path,'test');
           assert.ok(err.errors.required instanceof ValidatorError);
           assert.equal(err.errors.required.type,'required');
@@ -1679,24 +1682,19 @@ describe('Model', function(){
       var db = start()
         , collection = 'blogposts_' + random()
         , BlogPost = db.model('BlogPost', collection)
-        , post = new BlogPost();
 
-      post.save(function (err) {
+      BlogPost.create({ title: 1 }, { title: 2 }, function (err) {
         assert.ifError(err);
 
-        BlogPost.find({}, function (err, found) {
+        BlogPost.remove({ title: 1 }, function (err) {
           assert.ifError(err);
-          assert.equal(1, found.length);
 
-          BlogPost.remove({}, function (err) {
+          BlogPost.find({}, function (err, found) {
+            db.close();
             assert.ifError(err);
-
-            BlogPost.find({}, function (err, found2) {
-              db.close();
-              assert.ifError(err);
-              assert.equal(0, found2.length);
-              done();
-            });
+            assert.equal(1, found.length);
+            assert.equal('2', found[0].title);
+            done();
           });
         });
       });
@@ -2807,9 +2805,9 @@ describe('Model', function(){
 
   it('updating an embedded array document to an Object value (gh-334)', function(done){
     var db = start()
-      , SubSchema = new Schema({ 
-          name : String , 
-          subObj : { subName : String } 
+      , SubSchema = new Schema({
+          name : String ,
+          subObj : { subName : String }
         });
     var GH334Schema = new Schema ({ name : String , arrData : [ SubSchema] });
 
@@ -3486,7 +3484,7 @@ describe('Model', function(){
   describe('#exec()', function(){
     it('count()', function(done){
       var db = start()
-        , BlogPost = db.model('BlogPost', collection);
+        , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
       BlogPost.create({title: 'interoperable count as promise'}, function (err, created) {
         assert.ifError(err);
@@ -3501,8 +3499,9 @@ describe('Model', function(){
     });
 
     it('update()', function(done){
+      var col = 'BlogPost'+random();
       var db = start()
-        , BlogPost = db.model('BlogPost', collection);
+        , BlogPost = db.model(col, bpSchema);
 
       BlogPost.create({title: 'interoperable update as promise'}, function (err, created) {
         assert.ifError(err);
@@ -3521,7 +3520,7 @@ describe('Model', function(){
 
     it('findOne()', function(done){
       var db = start()
-        , BlogPost = db.model('BlogPost', collection);
+        , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
       BlogPost.create({title: 'interoperable findOne as promise'}, function (err, created) {
         assert.ifError(err);
@@ -3537,20 +3536,23 @@ describe('Model', function(){
 
     it('find()', function(done){
       var db = start()
-        , BlogPost = db.model('BlogPost', collection);
+        , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
       BlogPost.create(
           {title: 'interoperable find as promise'}
         , {title: 'interoperable find as promise'}
         , function (err, createdOne, createdTwo) {
         assert.ifError(err);
-        var query = BlogPost.find({title: 'interoperable find as promise'});
+        var query = BlogPost.find({title: 'interoperable find as promise'}).sort('_id')
         query.exec(function (err, found) {
           db.close();
           assert.ifError(err);
           assert.equal(found.length, 2);
-          assert.equal(found[0]._id.id, createdOne._id.id);
-          assert.equal(found[1]._id.id, createdTwo._id.id);
+          var ids = {};
+          ids[String(found[0]._id)] = 1;
+          ids[String(found[1]._id)] = 1;
+          assert.ok(String(createdOne._id) in ids);
+          assert.ok(String(createdTwo._id) in ids);
           done();
         });
       });
@@ -3558,7 +3560,7 @@ describe('Model', function(){
 
     it('remove()', function(done){
       var db = start()
-        , BlogPost = db.model('BlogPost', collection);
+        , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
       BlogPost.create(
           {title: 'interoperable remove as promise'}
@@ -3578,7 +3580,7 @@ describe('Model', function(){
 
     it('op can be changed', function(done){
       var db = start()
-        , BlogPost = db.model('BlogPost', collection)
+        , BlogPost = db.model('BlogPost'+random(), bpSchema)
         , title = 'interop ad-hoc as promise';
 
       BlogPost.create({title: title }, function (err, created) {
@@ -3596,13 +3598,13 @@ describe('Model', function(){
     describe('promises', function(){
       it('count()', function(done){
         var db = start()
-          , BlogPost = db.model('BlogPost', collection);
+          , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
         BlogPost.create({title: 'interoperable count as promise 2'}, function (err, created) {
           assert.ifError(err);
           var query = BlogPost.count({title: 'interoperable count as promise 2'});
           var promise = query.exec();
-          promise.addBack(function (err, count) {
+          promise.onResolve(function (err, count) {
             db.close();
             assert.ifError(err);
             assert.equal(1, count);
@@ -3612,14 +3614,15 @@ describe('Model', function(){
       });
 
       it('update()', function(done){
+      var col = 'BlogPost'+random();
         var db = start()
-          , BlogPost = db.model('BlogPost', collection);
+          , BlogPost = db.model(col, bpSchema);
 
         BlogPost.create({title: 'interoperable update as promise 2'}, function (err, created) {
           assert.ifError(err);
           var query = BlogPost.update({title: 'interoperable update as promise 2'}, {title: 'interoperable update as promise delta 2'});
           var promise = query.exec();
-          promise.addBack(function (err) {
+          promise.onResolve(function (err) {
             assert.ifError(err);
             BlogPost.count({title: 'interoperable update as promise delta 2'}, function (err, count) {
               db.close();
@@ -3633,13 +3636,13 @@ describe('Model', function(){
 
       it('findOne()', function(done){
         var db = start()
-          , BlogPost = db.model('BlogPost', collection);
+          , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
         BlogPost.create({title: 'interoperable findOne as promise 2'}, function (err, created) {
           assert.ifError(err);
           var query = BlogPost.findOne({title: 'interoperable findOne as promise 2'});
           var promise = query.exec();
-          promise.addBack(function (err, found) {
+          promise.onResolve(function (err, found) {
             db.close();
             assert.ifError(err);
             assert.equal(found.id,created.id);
@@ -3650,7 +3653,7 @@ describe('Model', function(){
 
       it('find()', function(done){
         var db = start()
-          , BlogPost = db.model('BlogPost', collection);
+          , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
         BlogPost.create(
             {title: 'interoperable find as promise 2'}
@@ -3659,7 +3662,7 @@ describe('Model', function(){
           assert.ifError(err);
           var query = BlogPost.find({title: 'interoperable find as promise 2'}).sort('_id');
           var promise = query.exec();
-          promise.addBack(function (err, found) {
+          promise.onResolve(function (err, found) {
             db.close();
             assert.ifError(err);
             assert.equal(found.length,2);
@@ -3672,7 +3675,7 @@ describe('Model', function(){
 
       it('remove()', function(done){
         var db = start()
-          , BlogPost = db.model('BlogPost', collection);
+          , BlogPost = db.model('BlogPost'+random(), bpSchema);
 
         BlogPost.create(
             {title: 'interoperable remove as promise 2'}
@@ -3680,7 +3683,7 @@ describe('Model', function(){
           assert.ifError(err);
           var query = BlogPost.remove({title: 'interoperable remove as promise 2'});
           var promise = query.exec();
-          promise.addBack(function (err) {
+          promise.onResolve(function (err) {
             assert.ifError(err);
             BlogPost.count({title: 'interoperable remove as promise 2'}, function (err, count) {
               db.close();
@@ -3693,13 +3696,13 @@ describe('Model', function(){
 
       it('are compatible with op modification on the fly', function(done){
         var db = start()
-          , BlogPost = db.model('BlogPost', collection);
+          , BlogPost = db.model('BlogPost' + random(), bpSchema);
 
         BlogPost.create({title: 'interoperable ad-hoc as promise 2'}, function (err, created) {
           assert.ifError(err);
           var query = BlogPost.count({title: 'interoperable ad-hoc as promise 2'});
           var promise = query.exec('findOne');
-          promise.addBack(function (err, found) {
+          promise.onResolve(function (err, found) {
             db.close();
             assert.ifError(err);
             assert.equal(found._id.id,created._id.id);
@@ -3710,7 +3713,7 @@ describe('Model', function(){
 
       it('are thenable', function(done){
         var db = start()
-          , B = db.model('BlogPost', collection)
+          , B = db.model('BlogPost' + random(), bpSchema)
 
         var peopleSchema = Schema({ name: String, likes: ['ObjectId'] })
         var P = db.model('promise-BP-people', peopleSchema, random());
@@ -4121,6 +4124,18 @@ describe('Model', function(){
       })
     })
 
+    it('rejects new documents that have no _id set (1595)', function(done){
+      var db = start();
+      var s = new Schema({ _id: { type: String }});
+      var B = db.model('1595', s);
+      var b = new B;
+      b.save(function(err){
+        db.close();
+        assert.ok(err);
+        assert.ok(/must have an _id/.test(err));
+        done();
+      })
+    })
   });
 
   describe('_delta()', function(){
@@ -4443,5 +4458,54 @@ describe('Model', function(){
         });
       });
     })
+  })
+
+  it('allow for object passing to ref paths (gh-1606)', function(done){
+    var db = start();
+    var schA = new Schema({ title : String });
+    var schma = new Schema({
+      thing : { type : Schema.Types.ObjectId, ref : 'A' },
+      subdoc : {
+        some : String,
+        thing : [{ type : Schema.Types.ObjectId, ref : 'A' }]
+      }
+    });
+
+    var M1 = db.model('A', schA);
+    var M2 = db.model('A2', schma);
+    var a = new M1({ title : 'hihihih' }).toObject();
+    var thing = new M2({
+      thing : a,
+      subdoc : {
+        title : 'blah',
+        thing : [a]
+      }
+    });
+
+    assert.equal(thing.thing, a._id);
+    assert.equal(thing.subdoc.thing[0], a._id);
+
+    done();
+  })
+
+  it('setters trigger on null values (gh-1445)', function(done){
+    var db = start();
+    db.close();
+
+    var OrderSchema = new Schema({
+      total: {
+        type: Number,
+        default: 0,
+        set: function (value) {
+          assert.strictEqual(null, value);
+          return 10;
+        }
+      }
+    });
+
+    var Order = db.model('order'+random(), OrderSchema);
+    var o = new Order({ total: null });
+    assert.equal(o.total, 10);
+     done();
   })
 });
