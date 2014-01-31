@@ -15,7 +15,7 @@ var start = require('./common')
   , Mixed = SchemaTypes.Mixed
   , DocumentObjectId = mongoose.Types.ObjectId
   , MongooseArray = mongoose.Types.Array
-  , ReadPref = require('mquery').utils.mongo.ReadPreference
+  , ReadPref = mongoose.mongo.ReadPreference
   , vm = require('vm')
 
 /**
@@ -140,6 +140,9 @@ describe('schema', function(){
         name  : { type: String, enum: ['Edwald', 'Tobi'] }
       , age   : Number
     });
+
+    // check for global variable leak
+    assert.equal('undefined', typeof errorMessage);
 
     var Person = new Schema({
         name      : String
