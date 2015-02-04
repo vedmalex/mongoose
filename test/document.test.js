@@ -257,7 +257,7 @@ describe('document', function(){
     done();
   });
 
-  it('toObject options', function(done){
+  it('toObject options', function( done ){
     var doc = new TestDocument();
 
     doc.init({
@@ -411,6 +411,39 @@ describe('document', function(){
     // all done
     delete doc.schema.options.toObject;
     done();
+  });
+
+  it('doesnt use custom toObject options on save', function( done ){
+    var schema = new Schema({
+      name: String,
+      iWillNotBeDelete: Boolean,
+      nested: {
+        iWillNotBeDeleteToo: Boolean
+      }
+    });
+
+    schema.set('toObject', {
+      transform: function (doc, ret) {
+        delete ret.iWillNotBeDelete;
+        delete ret.nested.iWillNotBeDeleteToo;
+
+        return ret;
+      }
+    });
+    var db = start()
+      , Test = db.model('TestToObject', schema);
+
+    Test.create({ name: 'chetverikov', iWillNotBeDelete: true, 'nested.iWillNotBeDeleteToo': true}, function( err ){
+      assert.ifError(err);
+      Test.findOne({}, function( err, doc ){
+        assert.ifError(err);
+
+        assert.equal( doc._doc.iWillNotBeDelete, true );
+        assert.equal( doc._doc.nested.iWillNotBeDeleteToo, true );
+
+        done();
+      });
+    });
   });
 
   it('doesnt clobber child schema options when called with no params (gh-2035)', function(done) {
@@ -1255,7 +1288,7 @@ describe('document', function(){
   describe('gh-1638', function() {
     it('works', function(done) {
       var ItemChildSchema = new mongoose.Schema({
-        name: { type: String, required: true, default: "hello" },
+        name: { type: String, required: true, default: "hello" }
       });
 
       var ItemParentSchema = new mongoose.Schema({
@@ -1286,4 +1319,34 @@ describe('document', function(){
       });
     });
   });
+
+  describe('gh-2434', function() {
+    it('will save the new value', function(done) {
+      var ItemSchema = new mongoose.Schema({
+        st: Number,
+        s: []
+      });
+
+      var db = start();
+      var Item = db.model('gh-2434', ItemSchema, 'gh-2434');
+
+      var item = new Item({ st: 1 });
+
+      item.save(function(error) {
+        assert.ifError(error);
+        item.st = 3;
+        item.s = [];
+        item.save(function(error) {
+          assert.ifError(error);
+          // item.st is 3 but may not be saved to DB
+          Item.findById(item._id, function(error, doc) {
+            assert.ifError(error);
+            assert.equal(3, doc.st);
+            done();
+          });
+        });
+      });
+    });
+  });
+
 })
