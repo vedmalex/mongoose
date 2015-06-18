@@ -1102,8 +1102,11 @@ describe('model: findByIdAndUpdate:', function(){
           assert.ifError(error);
           assert.equal('eggs', breakfast.base);
           assert.equal('bacon', breakfast.topping);
-          db.close();
-          done();
+          Breakfast.count({ topping: 'bacon' }, function(error, count) {
+            assert.ifError(error);
+            assert.equal(count, 1);
+            db.close(done);
+          });
         });
     });
 
@@ -1148,8 +1151,11 @@ describe('model: findByIdAndUpdate:', function(){
           assert.ifError(error);
           assert.equal('eggs', breakfast.base);
           assert.equal('bacon', breakfast.topping);
-          db.close();
-          done();
+          Breakfast.count({ topping: 'bacon' }, function(error, count) {
+            assert.ifError(error);
+            assert.equal(count, 1);
+            db.close(done);
+          });
         });
     });
 
@@ -1313,6 +1319,36 @@ describe('model: findByIdAndUpdate:', function(){
           assert.equal(1, breakfast.eggs);
           db.close(done);
         });
+    });
+
+    it('should work with arrays (gh-3035)', function(done) {
+      var db = start();
+
+      var testSchema = new mongoose.Schema({
+        id: String,
+        name: String,
+        a: [String],
+        _createdAt: {
+          type: Number,
+          default: Date.now
+        },
+      });
+
+      var TestModel = db.model('gh3035', testSchema);
+      TestModel.create({ id: '1' }, function(error) {
+        assert.ifError(error);
+        TestModel.findOneAndUpdate(
+          { id: '1' },
+          { $set: { name: 'Joe' } },
+          {
+            upsert: true,
+            setDefaultsOnInsert: true
+          },
+          function(error, result) {
+            assert.ifError(error);
+            done();
+          });
+      });
     });
   });
 });

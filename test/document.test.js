@@ -548,7 +548,7 @@ describe('document', function(){
         delete ret.email;
       }
     };
-    
+
     topicSchema.options.toObject = {
       transform: function(doc, ret, options) {
         ret.title = ret.title.toLowerCase();
@@ -1727,7 +1727,7 @@ describe('document', function(){
     db.close(done);
   });
 
-  it('applies toJSON transform correctly for populated docs (gh-2910)', function(done) {
+  it('applies toJSON transform correctly for populated docs (gh-2910) (gh-2990)', function(done) {
     var db = start();
     var parentSchema = mongoose.Schema({
       c: { type: mongoose.Schema.Types.ObjectId, ref: 'gh-2910-1' }
@@ -1745,6 +1745,14 @@ describe('document', function(){
       name: String
     });
 
+    var childCalled = [];
+    childSchema.options.toJSON = {
+      transform: function(doc, ret, options) {
+        childCalled.push(ret);
+        return ret;
+      }
+    };
+
     var Child = db.model('gh-2910-1', childSchema);
     var Parent = db.model('gh-2910-0', parentSchema);
 
@@ -1755,9 +1763,78 @@ describe('document', function(){
           assert.equal(called.length, 1);
           assert.equal(called[0]._id.toString(), p._id.toString());
           assert.equal(doc._id.toString(), p._id.toString());
+          assert.equal(childCalled.length, 1);
+          assert.equal(childCalled[0]._id.toString(), c._id.toString());
+
+          called = [];
+          childCalled = [];
+
+          // JSON.stringify() passes field name, so make sure we don't treat
+          // that as a param to toJSON (gh-2990)
+          var doc = JSON.parse(JSON.stringify({ parent: p })).parent;
+          assert.equal(called.length, 1);
+          assert.equal(called[0]._id.toString(), p._id.toString());
+          assert.equal(doc._id.toString(), p._id.toString());
+          assert.equal(childCalled.length, 1);
+          assert.equal(childCalled[0]._id.toString(), c._id.toString());
+
           db.close(done);
         });
       });
+    });
+  });
+
+  it('setters firing with objects on real paths (gh-2943)', function(done) {
+    var M = mongoose.model('gh2943', {
+      myStr: {
+        type: String, set: function (v) { return v.value; }
+      },
+      otherStr: String
+    });
+
+    var t = new M({ myStr: { value: 'test' } });
+    assert.equal(t.myStr, 'test');
+
+    var t2 = new M({ otherStr: { value: 'test' } });
+    assert.ok(!t.otherStr);
+
+    done();
+  });
+
+  describe('gh-2782', function () {
+    it('should set data from a sub doc', function (done) {
+      var schema1 = new mongoose.Schema({
+        data: {
+          email: String
+        }
+      });
+      var schema2 = new mongoose.Schema({
+        email: String
+      });
+      var Model1 = mongoose.model('gh-2782-1', schema1);
+      var Model2 = mongoose.model('gh-2782-2', schema2);
+
+      var doc1 = new Model1({ 'data.email': 'some@example.com' });
+      assert.equal(doc1.data.email, 'some@example.com');
+      var doc2 = new Model2();
+      doc2.set(doc1.data);
+      assert.equal(doc2.email, 'some@example.com');
+      done();
+    });
+  });
+
+  it('doesnt attempt to cast generic objects as strings (gh-3030)', function(done) {
+    var M = mongoose.model('gh3030', {
+      myStr: {
+        type: String
+      }
+    });
+
+    var t = new M({ myStr: { thisIs: 'anObject' } });
+    assert.ok(!t.myStr);
+    t.validate(function(error) {
+      assert.ok(error);
+      done();
     });
   });
 });
