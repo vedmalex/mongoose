@@ -129,19 +129,19 @@ if (typeof window !== 'undefined') {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./document_provider.js":6,"./error":12,"./schema":24,"./schematype.js":35,"./types":41,"./utils.js":43,"./virtualtype":44,"buffer":47}],3:[function(require,module,exports){
+},{"./document_provider.js":6,"./error":12,"./schema":25,"./schematype.js":38,"./types":44,"./utils.js":47,"./virtualtype":48,"buffer":51}],3:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
 
-var NodeJSDocument = require('./document')
-  , EventEmitter = require('events').EventEmitter
-  , MongooseError = require('./error')
-  , Schema = require('./schema')
-  , ObjectId = require('./types/objectid')
-  , utils = require('./utils')
-  , ValidationError = MongooseError.ValidationError
-  , InternalCache = require('./internal');
+var NodeJSDocument = require('./document'),
+    EventEmitter = require('events').EventEmitter,
+    MongooseError = require('./error'),
+    Schema = require('./schema'),
+    ObjectId = require('./types/objectid'),
+    utils = require('./utils'),
+    ValidationError = MongooseError.ValidationError,
+    InternalCache = require('./internal');
 
 /**
  * Document constructor.
@@ -150,17 +150,17 @@ var NodeJSDocument = require('./document')
  * @param {Object} [fields] optional object containing the fields which were selected in the query returning this document and any populated paths data
  * @param {Boolean} [skipId] bool, should we auto create an ObjectId _id
  * @inherits NodeJS EventEmitter http://nodejs.org/api/events.html#events_class_events_eventemitter
- * @event `init`: Emitted on a document after it has was retreived from the db and fully hydrated by Mongoose.
+ * @event `init`: Emitted on a document after it has was retrieved from the db and fully hydrated by Mongoose.
  * @event `save`: Emitted when the document is successfully saved
  * @api private
  */
 
-function Document (obj, schema, fields, skipId, skipInit) {
+function Document(obj, schema, fields, skipId, skipInit) {
   if ( !(this instanceof Document) )
     return new Document( obj, schema, fields, skipId, skipInit );
 
 
-  if (utils.isObject(schema) && !(schema instanceof Schema)) {
+  if (utils.isObject(schema) && !schema.instanceOfSchema) {
     schema = new Schema(schema);
   }
 
@@ -168,15 +168,15 @@ function Document (obj, schema, fields, skipId, skipInit) {
   schema = this.schema || schema;
 
   // Generate ObjectId if it is missing, but it requires a scheme
-  if ( !this.schema && schema.options._id ){
+  if ( !this.schema && schema.options._id ) {
     obj = obj || {};
 
-    if ( obj._id === undefined ){
+    if ( obj._id === undefined ) {
       obj._id = new ObjectId();
     }
   }
 
-  if ( !schema ){
+  if ( !schema ) {
     throw new MongooseError.MissingSchemaError();
   }
 
@@ -205,18 +205,18 @@ function Document (obj, schema, fields, skipId, skipInit) {
   this.$__.emitter.setMaxListeners(0);
   this._doc = this.$__buildDoc(obj, fields, skipId);
 
-  if ( !skipInit && obj ){
+  if ( !skipInit && obj ) {
     this.init( obj );
   }
 
   this.$__registerHooksFromSchema();
 
   // apply methods
-  for ( var m in schema.methods ){
+  for ( var m in schema.methods ) {
     this[ m ] = schema.methods[ m ];
   }
   // apply statics
-  for ( var s in schema.statics ){
+  for ( var s in schema.statics ) {
     this[ s ] = schema.statics[ s ];
   }
 }
@@ -236,7 +236,7 @@ Document.prototype.constructor = Document;
 Document.ValidationError = ValidationError;
 module.exports = exports = Document;
 
-},{"./document":5,"./error":12,"./internal":21,"./schema":24,"./types/objectid":42,"./utils":43,"events":51}],4:[function(require,module,exports){
+},{"./document":5,"./error":12,"./internal":22,"./schema":25,"./types/objectid":45,"./utils":47,"events":55}],4:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
@@ -253,14 +253,14 @@ var Types = require('./schema/index');
  */
 
 var cast = module.exports = function(schema, obj) {
-  var paths = Object.keys(obj)
-    , i = paths.length
-    , any$conditionals
-    , schematype
-    , nested
-    , path
-    , type
-    , val;
+  var paths = Object.keys(obj),
+      i = paths.length,
+      any$conditionals,
+      schematype,
+      nested,
+      path,
+      type,
+      val;
 
   while (i--) {
     path = paths[i];
@@ -286,6 +286,10 @@ var cast = module.exports = function(schema, obj) {
 
       continue;
 
+    } else if (path === '$elemMatch') {
+
+      val = cast(schema, val);
+
     } else {
 
       if (!schema) {
@@ -297,11 +301,11 @@ var cast = module.exports = function(schema, obj) {
 
       if (!schematype) {
         // Handle potential embedded array queries
-        var split = path.split('.')
-          , j = split.length
-          , pathFirstHalf
-          , pathLastHalf
-          , remainingConds;
+        var split = path.split('.'),
+            j = split.length,
+            pathFirstHalf,
+            pathLastHalf,
+            remainingConds;
 
         // Find the part of the var path that is a path of the Schema
         while (j--) {
@@ -368,16 +372,16 @@ var cast = module.exports = function(schema, obj) {
             value = value.$geometry.coordinates;
           }
 
-          (function _cast (val) {
+          (function _cast(val) {
             if (Array.isArray(val)) {
-              val.forEach(function (item, i) {
+              val.forEach(function(item, i) {
                 if (Array.isArray(item) || utils.isObject(item)) {
                   return _cast(item);
                 }
                 val[i] = numbertype.castForQuery(item);
               });
             } else {
-              var nearKeys= Object.keys(val);
+              var nearKeys = Object.keys(val);
               var nearLen = nearKeys.length;
               while (nearLen--) {
                 var nkey = nearKeys[nearLen];
@@ -398,7 +402,7 @@ var cast = module.exports = function(schema, obj) {
         continue;
       } else if ('Object' === val.constructor.name) {
 
-        any$conditionals = Object.keys(val).some(function (k) {
+        any$conditionals = Object.keys(val).some(function(k) {
           return k.charAt(0) === '$' && k !== '$id' && k !== '$ref';
         });
 
@@ -406,8 +410,8 @@ var cast = module.exports = function(schema, obj) {
           obj[path] = schematype.castForQuery(val);
         } else {
 
-          var ks = Object.keys(val)
-            , $cond;
+          var ks = Object.keys(val),
+              $cond;
 
           k = ks.length;
 
@@ -445,7 +449,7 @@ var cast = module.exports = function(schema, obj) {
   return obj;
 };
 
-},{"./schema/index":30,"./utils":43}],5:[function(require,module,exports){
+},{"./schema/index":32,"./utils":47}],5:[function(require,module,exports){
 (function (process,Buffer){
 /* eslint no-unused-vars: 1 */
 
@@ -453,23 +457,24 @@ var cast = module.exports = function(schema, obj) {
  * Module dependencies.
  */
 
-var EventEmitter = require('events').EventEmitter
-  , MongooseError = require('./error')
-  , MixedSchema = require('./schema/mixed')
-  , Schema = require('./schema')
-  , ValidatorError = require('./schematype').ValidatorError
-  , utils = require('./utils')
-  , clone = utils.clone
-  , isMongooseObject = utils.isMongooseObject
-  , inspect = require('util').inspect
-  , ValidationError = MongooseError.ValidationError
-  , InternalCache = require('./internal')
-  , deepEqual = utils.deepEqual
-  , hooks = require('hooks-fixed')
-  , PromiseProvider = require('./promise_provider')
-  , DocumentArray
-  , MongooseArray
-  , Embedded;
+var EventEmitter = require('events').EventEmitter,
+    MongooseError = require('./error'),
+    MixedSchema = require('./schema/mixed'),
+    Schema = require('./schema'),
+    StrictModeError = require('./error/strict'),
+    ValidatorError = require('./schematype').ValidatorError,
+    utils = require('./utils'),
+    clone = utils.clone,
+    isMongooseObject = utils.isMongooseObject,
+    inspect = require('util').inspect,
+    ValidationError = MongooseError.ValidationError,
+    InternalCache = require('./internal'),
+    deepEqual = utils.deepEqual,
+    hooks = require('hooks-fixed'),
+    PromiseProvider = require('./promise_provider'),
+    DocumentArray,
+    MongooseArray,
+    Embedded;
 
 /**
  * Document constructor.
@@ -483,7 +488,7 @@ var EventEmitter = require('events').EventEmitter
  * @api private
  */
 
-function Document (obj, fields, skipId) {
+function Document(obj, fields, skipId) {
   this.$__ = new InternalCache;
   this.$__.emitter = new EventEmitter();
   this.isNew = true;
@@ -512,8 +517,8 @@ function Document (obj, fields, skipId) {
   }
 
   if (!schema.options.strict && obj) {
-    var self = this
-      , keys = Object.keys(this._doc);
+    var self = this,
+        keys = Object.keys(this._doc);
 
     keys.forEach(function(key) {
       if (!(key in schema.tree)) {
@@ -595,7 +600,7 @@ Document.prototype.errors;
  * @memberOf Document
  */
 
-Document.prototype.$__buildDoc = function (obj, fields, skipId) {
+Document.prototype.$__buildDoc = function(obj, fields, skipId) {
   var doc = {};
   var exclude = null;
   var keys;
@@ -608,18 +613,22 @@ Document.prototype.$__buildDoc = function (obj, fields, skipId) {
     keys = Object.keys(fields);
     ki = keys.length;
 
-    while (ki--) {
-      if (keys[ki] !== '_id' &&
-        (!fields[keys[ki]] || typeof fields[keys[ki]] !== 'object')) {
-        exclude = !fields[keys[ki]];
-        break;
+    if (ki === 1 && keys[0] === '_id') {
+      exclude = !!fields[keys[ki]];
+    } else {
+      while (ki--) {
+        if (keys[ki] !== '_id' &&
+          (!fields[keys[ki]] || typeof fields[keys[ki]] !== 'object')) {
+          exclude = !fields[keys[ki]];
+          break;
+        }
       }
     }
   }
 
-  var paths = Object.keys(this.schema.paths)
-    , plen = paths.length
-    , ii = 0;
+  var paths = Object.keys(this.schema.paths),
+      plen = paths.length,
+      ii = 0;
 
   for (; ii < plen; ++ii) {
     var p = paths[ii];
@@ -639,8 +648,8 @@ Document.prototype.$__buildDoc = function (obj, fields, skipId) {
     var included = false;
 
     for (; i < len; ++i) {
-      var piece = path[i]
-        , def;
+      var piece = path[i],
+          def;
 
       curPath += piece;
 
@@ -698,7 +707,7 @@ Document.prototype.$__buildDoc = function (obj, fields, skipId) {
  * @api private
  */
 
-Document.prototype.init = function (doc, opts, fn) {
+Document.prototype.init = function(doc, opts, fn) {
   // do not prefix this method with $__ since its
   // used by public hooks
 
@@ -736,14 +745,14 @@ Document.prototype.init = function (doc, opts, fn) {
  * @api private
  */
 
-function init (self, obj, doc, prefix) {
+function init(self, obj, doc, prefix) {
   prefix = prefix || '';
 
-  var keys = Object.keys(obj)
-    , len = keys.length
-    , schema
-    , path
-    , i;
+  var keys = Object.keys(obj),
+      len = keys.length,
+      schema,
+      path,
+      i;
 
   while (len--) {
     i = keys[len];
@@ -794,15 +803,15 @@ function init (self, obj, doc, prefix) {
  * @memberOf Document
  */
 
-Document.prototype.$__storeShard = function () {
+Document.prototype.$__storeShard = function() {
   // backwards compat
   var key = this.schema.options.shardKey || this.schema.options.shardkey;
   if (!(key && 'Object' == utils.getFunctionName(key.constructor))) return;
 
-  var orig = this.$__.shardval = {}
-    , paths = Object.keys(key)
-    , len = paths.length
-    , val;
+  var orig = this.$__.shardval = {},
+      paths = Object.keys(key),
+      len = paths.length,
+      val;
 
   for (var i = 0; i < len; ++i) {
     val = this.getValue(paths[i]);
@@ -846,7 +855,7 @@ for (var k in hooks) {
  * @api public
  */
 
-Document.prototype.update = function update () {
+Document.prototype.update = function update() {
   var args = utils.args(arguments);
   args.unshift({_id: this._id});
   return this.constructor.update.apply(this.constructor, args);
@@ -884,16 +893,16 @@ Document.prototype.update = function update () {
  * @api public
  */
 
-Document.prototype.set = function (path, val, type, options) {
+Document.prototype.set = function(path, val, type, options) {
   if (type && 'Object' == utils.getFunctionName(type.constructor)) {
     options = type;
     type = undefined;
   }
 
-  var merge = options && options.merge
-    , adhoc = type && true !== type
-    , constructing = true === type
-    , adhocs;
+  var merge = options && options.merge,
+      adhoc = type && true !== type,
+      constructing = true === type,
+      adhocs;
 
   var strict = options && 'strict' in options
     ? options.strict
@@ -901,7 +910,7 @@ Document.prototype.set = function (path, val, type, options) {
 
   if (adhoc) {
     adhocs = this.$__.adhocPaths || (this.$__.adhocPaths = {});
-    adhocs[path] = Schema.interpretAsType(path, type);
+    adhocs[path] = Schema.interpretAsType(path, type, this.schema.options);
   }
 
   if ('string' !== typeof path) {
@@ -925,10 +934,10 @@ Document.prototype.set = function (path, val, type, options) {
         }
       }
 
-      var keys = Object.keys(path)
-        , i = keys.length
-        , pathtype
-        , key;
+      var keys = Object.keys(path),
+          i = keys.length,
+          pathtype,
+          key;
 
       while (i--) {
         key = keys[i];
@@ -948,9 +957,18 @@ Document.prototype.set = function (path, val, type, options) {
           this.set(path[key], prefix + key, constructing);
         } else if (strict) {
           if ('real' === pathtype || 'virtual' === pathtype) {
+            // Check for setting single embedded schema to document (gh-3535)
+            if (this.schema.paths[pathName] &&
+                this.schema.paths[pathName].$isSingleNested &&
+                path[key] instanceof Document) {
+              path[key] = path[key].toObject({ virtuals: false });
+            }
             this.set(prefix + key, path[key], constructing);
+          } else if (pathtype === 'nested' && path[key] instanceof Document) {
+            this.set(prefix + key,
+              path[key].toObject({ virtuals: false }), constructing);
           } else if ('throw' == strict) {
-            throw new Error('Field `' + key + '` is not in schema.');
+            throw new StrictModeError(key);
           }
         } else if (undefined !== path[key]) {
           this.set(prefix + key, path[key], constructing);
@@ -985,7 +1003,7 @@ Document.prototype.set = function (path, val, type, options) {
     var mixed;
 
     for (i = 0; i < parts.length; ++i) {
-      var subpath = parts.slice(0, i+1).join('.');
+      var subpath = parts.slice(0, i + 1).join('.');
       schema = this.schema.path(subpath);
       if (schema instanceof MixedSchema) {
         // allow changes to sub paths of mixed types
@@ -996,7 +1014,7 @@ Document.prototype.set = function (path, val, type, options) {
 
     if (!mixed) {
       if ('throw' == strict) {
-        throw new Error("Field `" + path + "` is not in schema.");
+        throw new StrictModeError(path);
       }
       return this;
     }
@@ -1018,7 +1036,7 @@ Document.prototype.set = function (path, val, type, options) {
     pathToMark = path;
   } else {
     for (i = 0; i < parts.length; ++i) {
-      subpath = parts.slice(0, i+1).join('.');
+      subpath = parts.slice(0, i + 1).join('.');
       if (this.isDirectModified(subpath) // earlier prefixes that are already
                                          // marked as dirty have precedence
           || this.get(subpath) === null) {
@@ -1044,17 +1062,42 @@ Document.prototype.set = function (path, val, type, options) {
   try {
     // If the user is trying to set a ref path to a document with
     // the correct model name, treat it as populated
+    var didPopulate = false;
     if (schema.options &&
         schema.options.ref &&
         val instanceof Document &&
         schema.options.ref === val.constructor.modelName) {
-      this.populated(path, val._id);
+      this.populated(path, val._id, { model: val.constructor });
+      didPopulate = true;
+    }
+
+    if (schema.options &&
+        Array.isArray(schema.options.type) &&
+        schema.options.type.length &&
+        schema.options.type[0].ref &&
+        Array.isArray(val) &&
+        val.length > 0 &&
+        val[0] instanceof Document &&
+        val[0].constructor.modelName &&
+        schema.options.type[0].ref === val[0].constructor.modelName) {
+      this.populated(path, val.map(function(v) { return v._id; }),
+        { model: val[0].constructor });
+      didPopulate = true;
     }
     val = schema.applySetters(val, this, false, priorVal);
+
+    if (!didPopulate && this.$__.populated) {
+      delete this.$__.populated[path];
+    }
+
     this.$markValid(path);
   } catch (e) {
+    var reason;
+    if (!(e instanceof MongooseError.CastError)) {
+      reason = e;
+    }
     this.invalidate(path,
-      new MongooseError.CastError(schema.instance, val, path));
+      new MongooseError.CastError(schema.instance, val, path, reason));
     shouldSet = false;
   }
 
@@ -1074,7 +1117,7 @@ Document.prototype.set = function (path, val, type, options) {
  * @memberOf Document
  */
 
-Document.prototype.$__shouldModify = function (
+Document.prototype.$__shouldModify = function(
     pathToMark, path, constructing, parts, schema, val, priorVal) {
 
   if (this.isNew) return true;
@@ -1113,7 +1156,7 @@ Document.prototype.$__shouldModify = function (
  * @memberOf Document
  */
 
-Document.prototype.$__set = function (
+Document.prototype.$__set = function(
     pathToMark, path, constructing, parts, schema, val, priorVal) {
   Embedded = Embedded || require('./types/embedded');
 
@@ -1138,13 +1181,13 @@ Document.prototype.$__set = function (
     }
   }
 
-  var obj = this._doc
-    , i = 0
-    , l = parts.length;
+  var obj = this._doc,
+      i = 0,
+      l = parts.length;
 
   for (; i < l; i++) {
-    var next = i + 1
-      , last = next === l;
+    var next = i + 1,
+        last = next === l;
 
     if (last) {
       obj[parts[i]] = val;
@@ -1152,6 +1195,8 @@ Document.prototype.$__set = function (
       if (obj[parts[i]] && 'Object' === utils.getFunctionName(obj[parts[i]].constructor)) {
         obj = obj[parts[i]];
       } else if (obj[parts[i]] && obj[parts[i]] instanceof Embedded) {
+        obj = obj[parts[i]];
+      } else if (obj[parts[i]] && obj[parts[i]].$isSingleNested) {
         obj = obj[parts[i]];
       } else if (obj[parts[i]] && Array.isArray(obj[parts[i]])) {
         obj = obj[parts[i]];
@@ -1169,7 +1214,7 @@ Document.prototype.$__set = function (
  * @api private
  */
 
-Document.prototype.getValue = function (path) {
+Document.prototype.getValue = function(path) {
   return utils.getValue(path, this._doc);
 };
 
@@ -1181,7 +1226,7 @@ Document.prototype.getValue = function (path) {
  * @api private
  */
 
-Document.prototype.setValue = function (path, val) {
+Document.prototype.setValue = function(path, val) {
   utils.setValue(path, val, this._doc);
   return this;
 };
@@ -1202,15 +1247,15 @@ Document.prototype.setValue = function (path, val) {
  * @api public
  */
 
-Document.prototype.get = function (path, type) {
+Document.prototype.get = function(path, type) {
   var adhoc;
   if (type) {
-    adhoc = Schema.interpretAsType(path, type);
+    adhoc = Schema.interpretAsType(path, type, this.schema.options);
   }
 
-  var schema = this.$__path(path) || this.schema.virtualpath(path)
-    , pieces = path.split('.')
-    , obj = this._doc;
+  var schema = this.$__path(path) || this.schema.virtualpath(path),
+      pieces = path.split('.'),
+      obj = this._doc;
 
   for (var i = 0, l = pieces.length; i < l; i++) {
     obj = undefined === obj || null === obj
@@ -1222,7 +1267,9 @@ Document.prototype.get = function (path, type) {
     obj = adhoc.cast(obj);
   }
 
-  if (schema) {
+  // Check if this path is populated - don't apply getters if it is,
+  // because otherwise its a nested object. See gh-3357
+  if (schema && !this.populated(path)) {
     obj = schema.applyGetters(obj, this);
   }
 
@@ -1238,9 +1285,9 @@ Document.prototype.get = function (path, type) {
  * @memberOf Document
  */
 
-Document.prototype.$__path = function (path) {
-  var adhocs = this.$__.adhocPaths
-    , adhocType = adhocs && adhocs[path];
+Document.prototype.$__path = function(path) {
+  var adhocs = this.$__.adhocPaths,
+      adhocType = adhocs && adhocs[path];
 
   if (adhocType) {
     return adhocType;
@@ -1264,7 +1311,7 @@ Document.prototype.$__path = function (path) {
  * @api public
  */
 
-Document.prototype.markModified = function (path) {
+Document.prototype.markModified = function(path) {
   this.$__.activePaths.modify(path);
 };
 
@@ -1275,12 +1322,12 @@ Document.prototype.markModified = function (path) {
  * @api public
  */
 
-Document.prototype.modifiedPaths = function () {
+Document.prototype.modifiedPaths = function() {
   var directModifiedPaths = Object.keys(this.$__.activePaths.states.modify);
 
-  return directModifiedPaths.reduce(function (list, path) {
+  return directModifiedPaths.reduce(function(list, path) {
     var parts = path.split('.');
-    return list.concat(parts.reduce(function (chains, part, i) {
+    return list.concat(parts.reduce(function(chains, part, i) {
       return chains.concat(parts.slice(0, i).concat(part).join('.'));
     }, []));
   }, []);
@@ -1304,7 +1351,7 @@ Document.prototype.modifiedPaths = function () {
  * @api public
  */
 
-Document.prototype.isModified = function (path) {
+Document.prototype.isModified = function(path) {
   return path
     ? !!~this.modifiedPaths().indexOf(path)
     : this.$__.activePaths.some('modify');
@@ -1325,7 +1372,7 @@ Document.prototype.isModified = function (path) {
  * @api public
  */
 
-Document.prototype.$isDefault = function (path) {
+Document.prototype.$isDefault = function(path) {
   return (path in this.$__.activePaths.states.default);
 };
 
@@ -1343,7 +1390,7 @@ Document.prototype.$isDefault = function (path) {
  * @api public
  */
 
-Document.prototype.isDirectModified = function (path) {
+Document.prototype.isDirectModified = function(path) {
   return (path in this.$__.activePaths.states.modify);
 };
 
@@ -1355,7 +1402,7 @@ Document.prototype.isDirectModified = function (path) {
  * @api public
  */
 
-Document.prototype.isInit = function (path) {
+Document.prototype.isInit = function(path) {
   return (path in this.$__.activePaths.states.init);
 };
 
@@ -1374,17 +1421,17 @@ Document.prototype.isInit = function (path) {
  * @api public
  */
 
-Document.prototype.isSelected = function isSelected (path) {
+Document.prototype.isSelected = function isSelected(path) {
   if (this.$__.selected) {
 
     if ('_id' === path) {
       return 0 !== this.$__.selected._id;
     }
 
-    var paths = Object.keys(this.$__.selected)
-      , i = paths.length
-      , inclusive = false
-      , cur;
+    var paths = Object.keys(this.$__.selected),
+        i = paths.length,
+        inclusive = false,
+        cur;
 
     if (1 === i && '_id' === paths[0]) {
       // only _id was selected.
@@ -1394,7 +1441,7 @@ Document.prototype.isSelected = function isSelected (path) {
     while (i--) {
       cur = paths[i];
       if ('_id' == cur) continue;
-      inclusive = !! this.$__.selected[cur];
+      inclusive = !!this.$__.selected[cur];
       break;
     }
 
@@ -1418,7 +1465,7 @@ Document.prototype.isSelected = function isSelected (path) {
       }
     }
 
-    return ! inclusive;
+    return !inclusive;
   }
 
   return true;
@@ -1438,12 +1485,42 @@ Document.prototype.isSelected = function isSelected (path) {
  *       else // validation passed
  *     });
  *
+ * @param {Object} optional options internal options
  * @param {Function} optional callback called after validation completes, passing an error if one occurred
  * @return {Promise} Promise
  * @api public
  */
 
-Document.prototype.validate = function (callback) {
+Document.prototype.validate = function(options, callback) {
+  var _this = this;
+  var Promise = PromiseProvider.get();
+  if (typeof options === 'function') {
+    callback = options;
+    options = null;
+  }
+
+  if (options && options.__noPromise) {
+    this.$__validate(callback);
+    return;
+  }
+
+  return new Promise.ES6(function(resolve, reject) {
+    _this.$__validate(function(error) {
+      callback && callback(error);
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+};
+
+/*!
+ * ignore
+ */
+
+Document.prototype.$__validate = function(callback) {
   var self = this;
   var _complete = function() {
     var err = self.$__.validationError;
@@ -1462,10 +1539,9 @@ Document.prototype.validate = function (callback) {
       return;
     }
   };
-  var Promise = PromiseProvider.get();
 
   // only validate required fields when necessary
-  var paths = Object.keys(this.$__.activePaths.states.require).filter(function (path) {
+  var paths = Object.keys(this.$__.activePaths.states.require).filter(function(path) {
     if (!self.isSelected(path) && !self.isModified(path)) return false;
     return true;
   });
@@ -1475,29 +1551,25 @@ Document.prototype.validate = function (callback) {
   paths = paths.concat(Object.keys(this.$__.activePaths.states.default));
 
   if (0 === paths.length) {
-    return new Promise.ES6(function(resolve, reject) {
-      process.nextTick(function() {
-        var err = _complete();
-        if (err) {
-          callback && callback(err);
-          reject(err);
-          return;
-        }
-        callback && callback();
-        resolve();
-      });
+    process.nextTick(function() {
+      var err = _complete();
+      if (err) {
+        callback(err);
+        return;
+      }
+      callback();
     });
   }
 
-  var validating = {}
-    , total = 0;
+  var validating = {},
+      total = 0;
 
   // gh-661: if a whole array is modified, make sure to run validation on all
   // the children as well
   for (var i = 0; i < paths.length; ++i) {
     var path = paths[i];
     var val = self.getValue(path);
-    if (val instanceof Array && !Buffer.isBuffer(val) &&
+    if (val && val.isMongooseArray && !Buffer.isBuffer(val) &&
         !val.isMongooseDocumentArray) {
       var numElements = val.length;
       for (var j = 0; j < numElements; ++j) {
@@ -1506,48 +1578,44 @@ Document.prototype.validate = function (callback) {
     }
   }
 
-  return new Promise.ES6(function(resolve, reject) {
-    var complete = function() {
-      var err = _complete();
-      if (err) {
-        callback && callback(err);
-        reject(err);
+  var complete = function() {
+    var err = _complete();
+    if (err) {
+      callback(err);
+      return;
+    }
+    callback();
+  };
+
+  var validatePath = function(path) {
+    if (validating[path]) return;
+
+    validating[path] = true;
+    total++;
+
+    process.nextTick(function() {
+      var p = self.schema.path(path);
+      if (!p) {
+        return --total || complete();
+      }
+
+      // If user marked as invalid or there was a cast error, don't validate
+      if (!self.$isValid(path)) {
+        --total || complete();
         return;
       }
-      callback && callback();
-      resolve();
-    };
 
-    var validatePath = function(path) {
-      if (validating[path]) return;
-
-      validating[path] = true;
-      total++;
-
-      process.nextTick(function(){
-        var p = self.schema.path(path);
-        if (!p) {
-          return --total || complete();
+      var val = self.getValue(path);
+      p.doValidate(val, function(err) {
+        if (err) {
+          self.invalidate(path, err, undefined, true);
         }
+        --total || complete();
+      }, self);
+    });
+  };
 
-        // If user marked as invalid or there was a cast error, don't validate
-        if (!self.$isValid(path)) {
-          --total || complete();
-          return;
-        }
-
-        var val = self.getValue(path);
-        p.doValidate(val, function (err) {
-          if (err) {
-            self.invalidate(path, err, undefined, true);
-          }
-          --total || complete();
-        }, self);
-      });
-    };
-
-    paths.forEach(validatePath);
-  });
+  paths.forEach(validatePath);
 };
 
 /**
@@ -1579,7 +1647,7 @@ Document.prototype.validateSync = function(pathsToValidate) {
   }
 
   // only validate required fields when necessary
-  var paths = Object.keys(this.$__.activePaths.states.require).filter(function (path) {
+  var paths = Object.keys(this.$__.activePaths.states.require).filter(function(path) {
     if (!self.isSelected(path) && !self.isModified(path)) return false;
     return true;
   });
@@ -1600,7 +1668,7 @@ Document.prototype.validateSync = function(pathsToValidate) {
 
   var validating = {};
 
-  paths.forEach(function (path) {
+  paths.forEach(function(path) {
     if (validating[path]) return;
 
     validating[path] = true;
@@ -1663,7 +1731,7 @@ Document.prototype.validateSync = function(pathsToValidate) {
  * @api public
  */
 
-Document.prototype.invalidate = function (path, err, val) {
+Document.prototype.invalidate = function(path, err, val) {
   if (!this.$__.validationError) {
     this.$__.validationError = new ValidationError(this);
   }
@@ -1726,18 +1794,18 @@ Document.prototype.$isValid = function(path) {
  * @memberOf Document
  */
 
-Document.prototype.$__reset = function reset () {
+Document.prototype.$__reset = function reset() {
   var self = this;
   DocumentArray || (DocumentArray = require('./types/documentarray'));
 
   this.$__.activePaths
-  .map('init', 'modify', function (i) {
+  .map('init', 'modify', function(i) {
     return self.getValue(i);
   })
-  .filter(function (val) {
+  .filter(function(val) {
     return val && val instanceof Array && val.isMongooseDocumentArray && val.length;
   })
-  .forEach(function (array) {
+  .forEach(function(array) {
     var i = array.length;
     while (i--) {
       var doc = array[i];
@@ -1747,7 +1815,7 @@ Document.prototype.$__reset = function reset () {
   });
 
   // clear atomics
-  this.$__dirty().forEach(function (dirt) {
+  this.$__dirty().forEach(function(dirt) {
     var type = dirt.value;
     if (type && type._atomics) {
       type._atomics = {};
@@ -1760,7 +1828,7 @@ Document.prototype.$__reset = function reset () {
   this.$__.validationError = undefined;
   this.errors = undefined;
   self = this;
-  this.schema.requiredPaths().forEach(function (path) {
+  this.schema.requiredPaths().forEach(function(path) {
     self.$__.activePaths.require(path);
   });
 
@@ -1775,10 +1843,10 @@ Document.prototype.$__reset = function reset () {
  * @memberOf Document
  */
 
-Document.prototype.$__dirty = function () {
+Document.prototype.$__dirty = function() {
   var self = this;
 
-  var all = this.$__.activePaths.map('modify', function (path) {
+  var all = this.$__.activePaths.map('modify', function(path) {
     return {
       path: path,
       value: self.getValue(path),
@@ -1788,7 +1856,7 @@ Document.prototype.$__dirty = function () {
 
   // gh-2558: if we had to set a default and the value is not undefined,
   // we have to save as well
-  all = all.concat(this.$__.activePaths.map('default', function (path) {
+  all = all.concat(this.$__.activePaths.map('default', function(path) {
     if (path === '_id' || !self.getValue(path)) {
       return;
     }
@@ -1800,16 +1868,16 @@ Document.prototype.$__dirty = function () {
   }));
 
   // Sort dirty paths in a flat hierarchy.
-  all.sort(function (a, b) {
+  all.sort(function(a, b) {
     return (a.path < b.path ? -1 : (a.path > b.path ? 1 : 0));
   });
 
   // Ignore "foo.a" if "foo" is dirty already.
-  var minimal = []
-    , lastPath
-    , top;
+  var minimal = [],
+      lastPath,
+      top;
 
-  all.forEach(function (item, i) {
+  all.forEach(function(item, i) {
     if (!item) {
       return;
     }
@@ -1837,11 +1905,11 @@ Document.prototype.$__dirty = function () {
  * Compiles schemas.
  */
 
-function compile (tree, proto, prefix) {
-  var keys = Object.keys(tree)
-    , i = keys.length
-    , limb
-    , key;
+function compile(tree, proto, prefix, options) {
+  var keys = Object.keys(tree),
+      i = keys.length,
+      limb,
+      key;
 
   while (i--) {
     key = keys[i];
@@ -1850,12 +1918,13 @@ function compile (tree, proto, prefix) {
     defineKey(key
         , (('Object' === utils.getFunctionName(limb.constructor)
                && Object.keys(limb).length)
-               && (!limb.type || limb.type.type)
+               && (!limb[options.typeKey] || (options.typeKey === 'type' && limb.type.type))
                ? limb
                : null)
         , proto
         , prefix
-        , keys);
+        , keys
+        , options);
   }
 }
 
@@ -1876,66 +1945,84 @@ function getOwnPropertyDescriptors(object) {
  * Defines the accessor named prop on the incoming prototype.
  */
 
-function defineKey (prop, subprops, prototype, prefix, keys) {
+function defineKey(prop, subprops, prototype, prefix, keys, options) {
   var path = (prefix ? prefix + '.' : '') + prop;
   prefix = prefix || '';
 
   if (subprops) {
 
     Object.defineProperty(prototype, prop, {
-        enumerable: true
-      , configurable: true
-      , get: function () {
-          if (!this.$__.getters)
-            this.$__.getters = {};
+      enumerable: true,
+      configurable: true,
+      get: function() {
+        var _self = this;
+        if (!this.$__.getters)
+          this.$__.getters = {};
 
-          if (!this.$__.getters[path]) {
-            var nested = Object.create(Object.getPrototypeOf(this), getOwnPropertyDescriptors(this));
+        if (!this.$__.getters[path]) {
+          var nested = Object.create(Object.getPrototypeOf(this), getOwnPropertyDescriptors(this));
 
             // save scope for nested getters/setters
-            if (!prefix) nested.$__.scope = this;
+          if (!prefix) nested.$__.scope = this;
 
             // shadow inherited getters from sub-objects so
             // thing.nested.nested.nested... doesn't occur (gh-366)
-            var i = 0
-              , len = keys.length;
+          var i = 0,
+              len = keys.length;
 
-            for (; i < len; ++i) {
+          for (; i < len; ++i) {
               // over-write the parents getter without triggering it
-              Object.defineProperty(nested, keys[i], {
-                  enumerable: false   // It doesn't show up.
-                , writable: true      // We can set it later.
-                , configurable: true  // We can Object.defineProperty again.
-                , value: undefined    // It shadows its parent.
-              });
-            }
-
-            nested.toObject = function() {
-              return this.get(path);
-            };
-
-            nested.toJSON = nested.toObject;
-
-            nested.$__isNested = true;
-
-            compile(subprops, nested, path);
-            this.$__.getters[path] = nested;
+            Object.defineProperty(nested, keys[i], {
+              enumerable: false,    // It doesn't show up.
+              writable: true,       // We can set it later.
+              configurable: true,   // We can Object.defineProperty again.
+              value: undefined      // It shadows its parent.
+            });
           }
 
-          return this.$__.getters[path];
+          Object.defineProperty(nested, 'toObject', {
+            enumerable: true,
+            configurable: true,
+            writable: false,
+            value: function() {
+              return _self.get(path);
+            }
+          });
+
+          Object.defineProperty(nested, 'toJSON', {
+            enumerable: true,
+            configurable: true,
+            writable: false,
+            value: function() {
+              return _self.get(path);
+            }
+          });
+
+          Object.defineProperty(nested, '$__isNested', {
+            enumerable: true,
+            configurable: true,
+            writable: false,
+            value: true
+          });
+
+          compile(subprops, nested, path, options);
+          this.$__.getters[path] = nested;
         }
-      , set: function (v) {
-          if (v instanceof Document) v = v.toObject();
-          return (this.$__.scope || this).set(path, v);
-        }
+
+        return this.$__.getters[path];
+      },
+      set: function(v) {
+        if (v instanceof Document) v = v.toObject();
+        return (this.$__.scope || this).set(path, v);
+      }
     });
 
   } else {
     Object.defineProperty(prototype, prop, {
-        enumerable: true
-      , configurable: true
-      , get: function ( ) { return this.get.call(this.$__.scope || this, path); }
-      , set: function (v) { return this.set.call(this.$__.scope || this, path, v); }
+      enumerable: true,
+      configurable: true,
+      get: function() { return this.get.call(this.$__.scope || this, path); },
+      set: function(v) { return this.set.call(this.$__.scope || this, path, v); }
     });
   }
 }
@@ -1949,8 +2036,8 @@ function defineKey (prop, subprops, prototype, prefix, keys) {
  * @memberOf Document
  */
 
-Document.prototype.$__setSchema = function (schema) {
-  compile(schema.tree, this);
+Document.prototype.$__setSchema = function(schema) {
+  compile(schema.tree, this, undefined, schema.options);
   this.schema = schema;
 };
 
@@ -1963,20 +2050,20 @@ Document.prototype.$__setSchema = function (schema) {
  * @memberOf Document
  */
 
-Document.prototype.$__getArrayPathsToValidate = function () {
+Document.prototype.$__getArrayPathsToValidate = function() {
   DocumentArray || (DocumentArray = require('./types/documentarray'));
 
   // validate all document arrays.
   return this.$__.activePaths
-    .map('init', 'modify', function (i) {
+    .map('init', 'modify', function(i) {
       return this.getValue(i);
     }.bind(this))
-    .filter(function (val) {
+    .filter(function(val) {
       return val && val instanceof Array && val.isMongooseDocumentArray && val.length;
     }).reduce(function(seed, array) {
       return seed.concat(array);
     }, [])
-    .filter(function (doc) {return doc;});
+    .filter(function(doc) { return doc;});
 };
 
 
@@ -1988,13 +2075,18 @@ Document.prototype.$__getArrayPathsToValidate = function () {
  * @memberOf Document
  */
 
-Document.prototype.$__getAllSubdocs = function () {
+Document.prototype.$__getAllSubdocs = function() {
   DocumentArray || (DocumentArray = require('./types/documentarray'));
   Embedded = Embedded || require('./types/embedded');
 
   function docReducer(seed, path) {
     var val = this[path];
+
     if (val instanceof Embedded) seed.push(val);
+    if (val && val.$isSingleNested) {
+      seed = Object.keys(val._doc).reduce(docReducer.bind(val._doc), seed);
+      seed.push(val);
+    }
     if (val && val.isMongooseDocumentArray) {
       val.forEach(function _docReduce(doc) {
         if (!doc || !doc._doc) return;
@@ -2023,7 +2115,7 @@ Document.prototype.$__getAllSubdocs = function () {
  * @memberOf Document
  */
 
-Document.prototype.$__registerHooksFromSchema = function () {
+Document.prototype.$__registerHooksFromSchema = function() {
   Embedded = Embedded || require('./types/embedded');
   var Promise = PromiseProvider.get();
 
@@ -2032,7 +2124,7 @@ Document.prototype.$__registerHooksFromSchema = function () {
   if (!q.length) return self;
 
   // we are only interested in 'pre' hooks, and group by point-cut
-  var toWrap = q.reduce(function (seed, pair) {
+  var toWrap = q.reduce(function(seed, pair) {
     if (pair[0] !== 'pre' && pair[0] !== 'post' && pair[0] !== 'on') {
       self[pair[0]].apply(self, pair[1]);
       return seed;
@@ -2041,17 +2133,17 @@ Document.prototype.$__registerHooksFromSchema = function () {
     var pointCut = pair[0] === 'on' ? 'post' : args[0];
     if (!(pointCut in seed)) seed[pointCut] = { post: [], pre: [] };
     if (pair[0] === 'post') {
-        seed[pointCut].post.push(args);
+      seed[pointCut].post.push(args);
     } else if (pair[0] === 'on') {
-        seed[pointCut].push(args);
+      seed[pointCut].push(args);
     } else {
-        seed[pointCut].pre.push(args);
+      seed[pointCut].pre.push(args);
     }
     return seed;
   }, {post: []});
 
   // 'post' hooks are simpler
-  toWrap.post.forEach(function (args) {
+  toWrap.post.forEach(function(args) {
     self.on.apply(self, args);
   });
   delete toWrap.post;
@@ -2059,26 +2151,39 @@ Document.prototype.$__registerHooksFromSchema = function () {
   // 'init' should be synchronous on subdocuments
   if (toWrap.init && self instanceof Embedded) {
     if (toWrap.init.pre) {
-      toWrap.init.pre.forEach(function (args) {
+      toWrap.init.pre.forEach(function(args) {
         self.pre.apply(self, args);
       });
     }
     if (toWrap.init.post) {
-      toWrap.init.post.forEach(function (args) {
+      toWrap.init.post.forEach(function(args) {
         self.post.apply(self, args);
       });
     }
     delete toWrap.init;
+  } else if (toWrap.set) {
+    // Set hooks also need to be sync re: gh-3479
+    if (toWrap.set.pre) {
+      toWrap.set.pre.forEach(function(args) {
+        self.pre.apply(self, args);
+      });
+    }
+    if (toWrap.set.post) {
+      toWrap.set.post.forEach(function(args) {
+        self.post.apply(self, args);
+      });
+    }
+    delete toWrap.set;
   }
 
-  Object.keys(toWrap).forEach(function (pointCut) {
+  Object.keys(toWrap).forEach(function(pointCut) {
     // this is so we can wrap everything into a promise;
     var newName = ('$__original_' + pointCut);
     if (!self[pointCut]) {
       return;
     }
     self[newName] = self[pointCut];
-    self[pointCut] = function wrappedPointCut () {
+    self[pointCut] = function wrappedPointCut() {
       var args = [].slice.call(arguments);
       var lastArg = args.pop();
       var fn;
@@ -2105,11 +2210,11 @@ Document.prototype.$__registerHooksFromSchema = function () {
       });
     };
 
-    toWrap[pointCut].pre.forEach(function (args) {
+    toWrap[pointCut].pre.forEach(function(args) {
       args[0] = newName;
       self.pre.apply(self, args);
     });
-    toWrap[pointCut].post.forEach(function (args) {
+    toWrap[pointCut].post.forEach(function(args) {
       args[0] = newName;
       self.post.apply(self, args);
     });
@@ -2183,10 +2288,6 @@ Document.prototype.$toObject = function(options, json) {
 
   var ret = clone(this._doc, options) || {};
 
-  if (options.virtuals || options.getters && false !== options.virtuals) {
-    applyGetters(this, ret, 'virtuals', options);
-  }
-
   if (options.getters) {
     applyGetters(this, ret, 'paths', options);
     // applyGetters for paths will add nested empty objects;
@@ -2194,6 +2295,10 @@ Document.prototype.$toObject = function(options, json) {
     if (options.minimize) {
       ret = minimize(ret) || {};
     }
+  }
+
+  if (options.virtuals || options.getters && false !== options.virtuals) {
+    applyGetters(this, ret, 'virtuals', options);
   }
 
   if (options.versionKey === false && this.schema.options.versionKey) {
@@ -2342,7 +2447,7 @@ Document.prototype.$toObject = function(options, json) {
  * @api public
  */
 
-Document.prototype.toObject = function (options) {
+Document.prototype.toObject = function(options) {
   return this.$toObject(options);
 };
 
@@ -2353,12 +2458,12 @@ Document.prototype.toObject = function (options) {
  * @return {Object}
  */
 
-function minimize (obj) {
-  var keys = Object.keys(obj)
-    , i = keys.length
-    , hasKeys
-    , key
-    , val;
+function minimize(obj) {
+  var keys = Object.keys(obj),
+      i = keys.length,
+      hasKeys,
+      key,
+      val;
 
   while (i--) {
     key = keys[i];
@@ -2390,20 +2495,20 @@ function minimize (obj) {
  * @return {Object} `json`
  */
 
-function applyGetters (self, json, type, options) {
-  var schema = self.schema
-    , paths = Object.keys(schema[type])
-    , i = paths.length
-    , path;
+function applyGetters(self, json, type, options) {
+  var schema = self.schema,
+      paths = Object.keys(schema[type]),
+      i = paths.length,
+      path;
 
   while (i--) {
     path = paths[i];
 
-    var parts = path.split('.')
-      , plen = parts.length
-      , last = plen - 1
-      , branch = json
-      , part;
+    var parts = path.split('.'),
+        plen = parts.length,
+        last = plen - 1,
+        branch = json,
+        part;
 
     for (var ii = 0; ii < plen; ++ii) {
       part = parts[ii];
@@ -2433,7 +2538,7 @@ function applyGetters (self, json, type, options) {
  * @api public
  */
 
-Document.prototype.toJSON = function (options) {
+Document.prototype.toJSON = function(options) {
   return this.$toObject(options, true);
 };
 
@@ -2443,9 +2548,10 @@ Document.prototype.toJSON = function (options) {
  * @api public
  */
 
-Document.prototype.inspect = function (options) {
+Document.prototype.inspect = function(options) {
   var opts = options && 'Object' == utils.getFunctionName(options.constructor) ? options : {};
   opts.minimize = false;
+  opts.retainKeyOrder = true;
   return inspect(this.toObject(opts));
 };
 
@@ -2470,7 +2576,7 @@ Document.prototype.toString = Document.prototype.inspect;
  * @api public
  */
 
-Document.prototype.equals = function (doc) {
+Document.prototype.equals = function(doc) {
   var tid = this.get('_id');
   var docid = doc.get ? doc.get('_id') : doc;
   if (!tid && !docid) {
@@ -2520,14 +2626,14 @@ Document.prototype.equals = function (doc) {
  * @return {Document} this
  */
 
-Document.prototype.populate = function populate () {
+Document.prototype.populate = function populate() {
   if (0 === arguments.length) return this;
 
   var pop = this.$__.populate || (this.$__.populate = {});
   var args = utils.args(arguments);
   var fn;
 
-  if ('function' == typeof args[args.length-1]) {
+  if ('function' == typeof args[args.length - 1]) {
     fn = args.pop();
   }
 
@@ -2611,7 +2717,7 @@ Document.prototype.execPopulate = function() {
  * @api public
  */
 
-Document.prototype.populated = function (path, val, options) {
+Document.prototype.populated = function(path, val, options) {
   // val and options are internal
 
   if (val == null) {
@@ -2634,6 +2740,33 @@ Document.prototype.populated = function (path, val, options) {
 };
 
 /**
+ * Takes a populated field and returns it to its unpopulated state.
+ *
+ * ####Example:
+ *
+ *     Model.findOne().populate('author').exec(function (err, doc) {
+ *       console.log(doc.author.name); // Dr.Seuss
+ *       console.log(doc.depopulate('author'));
+ *       console.log(doc.author); // '5144cf8050f071d979c118a7'
+ *     })
+ *
+ * If the path was not populated, this is a no-op.
+ *
+ * @param {String} path
+ * @api public
+ */
+
+Document.prototype.depopulate = function(path) {
+  var populatedIds = this.populated(path);
+  if (!populatedIds) {
+    return;
+  }
+  delete this.$__.populated[path];
+  this.set(path, populatedIds);
+};
+
+
+/**
  * Returns the full path to this document.
  *
  * @param {String} [path]
@@ -2643,7 +2776,7 @@ Document.prototype.populated = function (path, val, options) {
  * @memberOf Document
  */
 
-Document.prototype.$__fullPath = function (path) {
+Document.prototype.$__fullPath = function(path) {
   // overridden in SubDocuments
   return path || '';
 };
@@ -2656,7 +2789,7 @@ Document.ValidationError = ValidationError;
 module.exports = exports = Document;
 
 }).call(this,require("FWaASH"),require("buffer").Buffer)
-},{"./error":12,"./internal":21,"./promise_provider":23,"./schema":24,"./schema/mixed":31,"./schematype":35,"./types/array":37,"./types/documentarray":39,"./types/embedded":40,"./utils":43,"FWaASH":53,"buffer":47,"events":51,"hooks-fixed":73,"util":55}],6:[function(require,module,exports){
+},{"./error":12,"./error/strict":18,"./internal":22,"./promise_provider":24,"./schema":25,"./schema/mixed":33,"./schematype":38,"./types/array":40,"./types/documentarray":42,"./types/embedded":43,"./utils":47,"FWaASH":57,"buffer":51,"events":55,"hooks-fixed":78,"util":59}],6:[function(require,module,exports){
 'use strict';
 
 /*!
@@ -2698,7 +2831,7 @@ var Binary = require('bson').Binary;
 
 module.exports = exports = Binary;
 
-},{"bson":58}],9:[function(require,module,exports){
+},{"bson":62}],9:[function(require,module,exports){
 /*!
  * Module exports.
  */
@@ -2723,7 +2856,7 @@ var ObjectId = require('bson').ObjectID;
 
 module.exports = exports = ObjectId;
 
-},{"bson":58}],11:[function(require,module,exports){
+},{"bson":62}],11:[function(require,module,exports){
 (function (global){
 /*!
  * ignore
@@ -2732,8 +2865,7 @@ module.exports = exports = ObjectId;
 var driver;
 
 if (typeof window === 'undefined') {
-  driver = require('./' +
-    (global.MONGOOSE_DRIVER_PATH || 'node-mongodb-native'));
+  driver = require(global.MONGOOSE_DRIVER_PATH || './node-mongodb-native');
 } else {
   driver = require('./browser');
 }
@@ -2754,9 +2886,13 @@ module.exports = driver;
  * @inherits Error https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Error
  */
 
-function MongooseError (msg) {
+function MongooseError(msg) {
   Error.call(this);
-  this.stack = new Error().stack;
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this);
+  } else {
+    this.stack = new Error().stack;
+  }
   this.message = msg;
   this.name = 'MongooseError';
 }
@@ -2793,12 +2929,12 @@ MongooseError.Messages = MongooseError.messages;
 MongooseError.CastError = require('./error/cast');
 MongooseError.ValidationError = require('./error/validation');
 MongooseError.ValidatorError = require('./error/validator');
-MongooseError.VersionError =require('./error/version');
+MongooseError.VersionError = require('./error/version');
 MongooseError.OverwriteModelError = require('./error/overwriteModel');
 MongooseError.MissingSchemaError = require('./error/missingSchema');
 MongooseError.DivergentArrayError = require('./error/divergentArray');
 
-},{"./error/cast":13,"./error/divergentArray":14,"./error/messages":15,"./error/missingSchema":16,"./error/overwriteModel":17,"./error/validation":18,"./error/validator":19,"./error/version":20}],13:[function(require,module,exports){
+},{"./error/cast":13,"./error/divergentArray":14,"./error/messages":15,"./error/missingSchema":16,"./error/overwriteModel":17,"./error/validation":19,"./error/validator":20,"./error/version":21}],13:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
@@ -2814,13 +2950,18 @@ var MongooseError = require('../error.js');
  * @api private
  */
 
-function CastError (type, value, path) {
+function CastError(type, value, path, reason) {
   MongooseError.call(this, 'Cast to ' + type + ' failed for value "' + value + '" at path "' + path + '"');
-  this.stack = new Error().stack;
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this);
+  } else {
+    this.stack = new Error().stack;
+  }
   this.name = 'CastError';
   this.kind = type;
   this.value = value;
   this.path = path;
+  this.reason = reason;
 }
 
 /*!
@@ -2851,7 +2992,7 @@ var MongooseError = require('../error.js');
  * @inherits MongooseError
  */
 
-function DivergentArrayError (paths) {
+function DivergentArrayError(paths) {
   var msg = 'For your own good, using `document.save()` to update an array '
           + 'which was selected using an $elemMatch projection OR '
           + 'populated using skip, limit, query conditions, or exclusion of '
@@ -2940,7 +3081,7 @@ var MongooseError = require('../error.js');
  * @inherits MongooseError
  */
 
-function MissingSchemaError (name) {
+function MissingSchemaError(name) {
   var msg = 'Schema hasn\'t been registered for model "' + name + '".\n'
           + 'Use mongoose.model(name, schema)';
   MongooseError.call(this, msg);
@@ -2975,7 +3116,7 @@ var MongooseError = require('../error.js');
  * @inherits MongooseError
  */
 
-function OverwriteModelError (name) {
+function OverwriteModelError(name) {
   MongooseError.call(this, 'Cannot overwrite `' + name + '` model once compiled.');
   Error.captureStackTrace && Error.captureStackTrace(this, arguments.callee);
   this.name = 'OverwriteModelError';
@@ -2995,6 +3136,43 @@ OverwriteModelError.prototype.constructor = MongooseError;
 module.exports = OverwriteModelError;
 
 },{"../error.js":12}],18:[function(require,module,exports){
+/*!
+ * Module dependencies.
+ */
+
+var MongooseError = require('../error.js');
+
+/**
+ * Strict mode error constructor
+ *
+ * @param {String} type
+ * @param {String} value
+ * @inherits MongooseError
+ * @api private
+ */
+
+function StrictModeError(path) {
+  MongooseError.call(this, 'Field `' + path + '` is not in schema and strict ' +
+    'mode is set to throw.');
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this);
+  } else {
+    this.stack = new Error().stack;
+  }
+  this.name = 'StrictModeError';
+  this.path = path;
+}
+
+/*!
+ * Inherits from MongooseError.
+ */
+
+StrictModeError.prototype = Object.create(MongooseError.prototype);
+StrictModeError.prototype.constructor = MongooseError;
+
+module.exports = StrictModeError;
+
+},{"../error.js":12}],19:[function(require,module,exports){
 
 /*!
  * Module requirements
@@ -3010,13 +3188,17 @@ var MongooseError = require('../error.js');
  * @inherits MongooseError
  */
 
-function ValidationError (instance) {
+function ValidationError(instance) {
   if (instance && instance.constructor.name === 'model') {
     MongooseError.call(this, instance.constructor.modelName + " validation failed");
   } else {
     MongooseError.call(this, "Validation failed");
   }
-  this.stack = new Error().stack;
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this);
+  } else {
+    this.stack = new Error().stack;
+  }
   this.name = 'ValidationError';
   this.errors = {};
   if (instance) {
@@ -3036,11 +3218,11 @@ ValidationError.prototype.constructor = MongooseError;
  * Console.log helper
  */
 
-ValidationError.prototype.toString = function () {
+ValidationError.prototype.toString = function() {
   var ret = this.name + ': ';
   var msgs = [];
 
-  Object.keys(this.errors).forEach(function (key) {
+  Object.keys(this.errors).forEach(function(key) {
     if (this == this.errors[key]) return;
     msgs.push(String(this.errors[key]));
   }, this);
@@ -3054,7 +3236,7 @@ ValidationError.prototype.toString = function () {
 
 module.exports = exports = ValidationError;
 
-},{"../error.js":12}],19:[function(require,module,exports){
+},{"../error.js":12}],20:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
@@ -3070,7 +3252,7 @@ var errorMessages = MongooseError.messages;
  * @api private
  */
 
-function ValidatorError (properties) {
+function ValidatorError(properties) {
   var msg = properties.message;
   if (!msg) {
     msg = errorMessages.general.default;
@@ -3079,7 +3261,11 @@ function ValidatorError (properties) {
   this.properties = properties;
   var message = this.formatMessage(msg, properties);
   MongooseError.call(this, message);
-  this.stack = new Error().stack;
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this);
+  } else {
+    this.stack = new Error().stack;
+  }
   this.name = 'ValidatorError';
   this.kind = properties.type;
   this.path = properties.path;
@@ -3097,7 +3283,7 @@ ValidatorError.prototype.constructor = MongooseError;
  * Formats error messages
  */
 
-ValidatorError.prototype.formatMessage = function (msg, properties) {
+ValidatorError.prototype.formatMessage = function(msg, properties) {
   var propertyNames = Object.keys(properties);
   for (var i = 0; i < propertyNames.length; ++i) {
     var propertyName = propertyNames[i];
@@ -3113,7 +3299,7 @@ ValidatorError.prototype.formatMessage = function (msg, properties) {
  * toString helper
  */
 
-ValidatorError.prototype.toString = function () {
+ValidatorError.prototype.toString = function() {
   return this.message;
 };
 
@@ -3123,7 +3309,7 @@ ValidatorError.prototype.toString = function () {
 
 module.exports = ValidatorError;
 
-},{"../error.js":12}],20:[function(require,module,exports){
+},{"../error.js":12}],21:[function(require,module,exports){
 
 /*!
  * Module dependencies.
@@ -3138,7 +3324,7 @@ var MongooseError = require('../error.js');
  * @api private
  */
 
-function VersionError () {
+function VersionError() {
   MongooseError.call(this, 'No matching document found.');
   Error.captureStackTrace && Error.captureStackTrace(this, arguments.callee);
   this.name = 'VersionError';
@@ -3157,7 +3343,7 @@ VersionError.prototype.constructor = MongooseError;
 
 module.exports = VersionError;
 
-},{"../error.js":12}],21:[function(require,module,exports){
+},{"../error.js":12}],22:[function(require,module,exports){
 /*!
  * Dependencies
  */
@@ -3167,7 +3353,7 @@ var ActiveRoster = StateMachine.ctor('require', 'modify', 'init', 'default', 'ig
 
 module.exports = exports = InternalCache;
 
-function InternalCache () {
+function InternalCache() {
   this.strictMode = undefined;
   this.selected = undefined;
   this.shardval = undefined;
@@ -3190,7 +3376,7 @@ function InternalCache () {
   this.fullPath = undefined;
 }
 
-},{"./statemachine":36}],22:[function(require,module,exports){
+},{"./statemachine":39}],23:[function(require,module,exports){
 /*!
  * Module dependencies
  */
@@ -3220,7 +3406,7 @@ var util = require('util');
  * @deprecated
  */
 
-function Promise (fn) {
+function Promise(fn) {
   MPromise.call(this, fn);
 }
 
@@ -3251,12 +3437,12 @@ Promise.ES6 = function(resolver) {
  */
 
 Promise.prototype = Object.create(MPromise.prototype, {
-    constructor: {
-        value: Promise
-      , enumerable: false
-      , writable: true
-      , configurable: true
-    }
+  constructor: {
+    value: Promise,
+    enumerable: false,
+    writable: true,
+    configurable: true
+  }
 });
 
 /*!
@@ -3305,7 +3491,7 @@ Promise.FAILURE = 'err';
  * @return {Promise} this
  */
 
-Promise.prototype.error = function (err) {
+Promise.prototype.error = function(err) {
   if (!(err instanceof Error)) {
     if (err instanceof Object) {
       err = util.inspect(err);
@@ -3330,7 +3516,7 @@ Promise.prototype.error = function (err) {
  * @deprecated
  */
 
-Promise.prototype.resolve = function (err) {
+Promise.prototype.resolve = function(err) {
   if (err) return this.error(err);
   return this.fulfill.apply(this, Array.prototype.slice.call(arguments, 1));
 };
@@ -3483,7 +3669,7 @@ Promise.prototype.addErrback = Promise.prototype.onReject;
 
 module.exports = Promise;
 
-},{"mpromise":77,"util":55}],23:[function(require,module,exports){
+},{"mpromise":82,"util":59}],24:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
@@ -3536,21 +3722,19 @@ Promise.reset = function() {
 
 module.exports = Promise;
 
-},{"./ES6Promise":1,"./promise":22,"mquery":82}],24:[function(require,module,exports){
+},{"./ES6Promise":1,"./promise":23,"mquery":87}],25:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module dependencies.
  */
 
-var readPref = require('./drivers').ReadPreference
-  , EventEmitter = require('events').EventEmitter
-  , VirtualType = require('./virtualtype')
-  , utils = require('./utils')
-  , MongooseTypes
-  , Kareem = require('kareem')
-  , async = require('async')
-  , PromiseProvider = require('./promise_provider');
-
+var readPref = require('./drivers').ReadPreference;
+var EventEmitter = require('events').EventEmitter;
+var VirtualType = require('./virtualtype');
+var utils = require('./utils');
+var MongooseTypes;
+var Kareem = require('kareem');
+var async = require('async');
 
 var IS_QUERY_HOOK = {
   count: true,
@@ -3579,6 +3763,7 @@ var IS_QUERY_HOOK = {
  * - [bufferCommands](/docs/guide.html#bufferCommands): bool - defaults to true
  * - [capped](/docs/guide.html#capped): bool - defaults to false
  * - [collection](/docs/guide.html#collection): string - no default
+ * - [emitIndexErrors](/docs/guide.html#emitIndexErrors): bool - defaults to false.
  * - [id](/docs/guide.html#id): bool - defaults to true
  * - [_id](/docs/guide.html#_id): bool - defaults to true
  * - `minimize`: bool - controls [document#toObject](#document_Document-toObject) behavior when called manually - defaults to true
@@ -3588,6 +3773,7 @@ var IS_QUERY_HOOK = {
  * - [strict](/docs/guide.html#strict): bool - defaults to true
  * - [toJSON](/docs/guide.html#toJSON) - object - no default
  * - [toObject](/docs/guide.html#toObject) - object - no default
+ * - [typeKey](/docs/guide.html#typeKey) - string - defaults to 'type'
  * - [validateBeforeSave](/docs/guide.html#validateBeforeSave) - bool - defaults to `true`
  * - [versionKey](/docs/guide.html#versionKey): bool - defaults to "__v"
  *
@@ -3601,13 +3787,14 @@ var IS_QUERY_HOOK = {
  * @api public
  */
 
-function Schema (obj, options) {
+function Schema(obj, options) {
   if (!(this instanceof Schema))
     return new Schema(obj, options);
 
   this.paths = {};
   this.subpaths = {};
   this.virtuals = {};
+  this.singleNestedPaths = {};
   this.nested = {};
   this.inherits = {};
   this.callQueue = [];
@@ -3635,14 +3822,18 @@ function Schema (obj, options) {
   var _idSubDoc = obj && obj._id && utils.isObject(obj._id);
 
   // ensure the documents get an auto _id unless disabled
-  var auto_id = !this.paths['_id'] && (!this.options.noId && this.options._id) && !_idSubDoc;
+  var auto_id = !this.paths['_id'] &&
+    (!this.options.noId && this.options._id) && !_idSubDoc;
 
   if (auto_id) {
-    this.add({ _id: {type: Schema.ObjectId, auto: true} });
+    obj = { _id: { auto: true } };
+    obj._id[this.options.typeKey] = Schema.ObjectId;
+    this.add(obj);
   }
 
   // ensure the documents receive an id getter unless disabled
-  var autoid = !this.paths['id'] && (!this.options.noVirtualId && this.options.id);
+  var autoid = !this.paths['id'] &&
+    (!this.options.noVirtualId && this.options.id);
   if (autoid) {
     this.virtual('id').get(idGetter);
   }
@@ -3655,9 +3846,9 @@ function Schema (obj, options) {
   // adds updatedAt and createdAt timestamps to documents if enabled
   var timestamps = this.options.timestamps;
   if (timestamps) {
-    var createdAt = timestamps.createdAt || 'createdAt'
-      , updatedAt = timestamps.updatedAt || 'updatedAt'
-      , schemaAdditions = {};
+    var createdAt = timestamps.createdAt || 'createdAt',
+        updatedAt = timestamps.updatedAt || 'updatedAt',
+        schemaAdditions = {};
 
     schemaAdditions[updatedAt] = Date;
 
@@ -3667,15 +3858,34 @@ function Schema (obj, options) {
 
     this.add(schemaAdditions);
 
-    this.pre('save', function (next) {
+    this.pre('save', function(next) {
       var defaultTimestamp = new Date();
 
-      if (!this[createdAt]){
+      if (!this[createdAt]) {
         this[createdAt] = auto_id ? this._id.getTimestamp() : defaultTimestamp;
       }
 
       this[updatedAt] = this.isNew ? this[createdAt] : defaultTimestamp;
 
+      next();
+    });
+
+    var genUpdates = function() {
+      var now = new Date();
+      var updates = {$set: {}, $setOnInsert: {}};
+      updates.$set[updatedAt] = now;
+      updates.$setOnInsert[createdAt] = now;
+
+      return updates;
+    };
+
+    this.pre('findOneAndUpdate', function(next) {
+      this.findOneAndUpdate({}, genUpdates());
+      next();
+    });
+
+    this.pre('update', function(next) {
+      this.update({}, genUpdates());
       next();
     });
   }
@@ -3686,7 +3896,7 @@ function Schema (obj, options) {
  * Returns this documents _id cast to a string.
  */
 
-function idGetter () {
+function idGetter() {
   if (this.$__._id) {
     return this.$__._id;
   }
@@ -3701,6 +3911,7 @@ function idGetter () {
  */
 Schema.prototype = Object.create( EventEmitter.prototype );
 Schema.prototype.constructor = Schema;
+Schema.prototype.instanceOfSchema = true;
 
 /**
  * Default middleware attached to a schema. Cannot be changed.
@@ -3719,15 +3930,36 @@ Object.defineProperty(Schema.prototype, '_defaultMiddleware', {
   value: [{
     kind: 'pre',
     hook: 'save',
-    fn: function(next) {
+    fn: function(next, options) {
       // Nested docs have their own presave
       if (this.ownerDocument) {
         return next();
       }
 
+      var hasValidateBeforeSaveOption = options &&
+        (typeof options === 'object') &&
+        ('validateBeforeSave' in options);
+
+      var shouldValidate;
+      if (hasValidateBeforeSaveOption) {
+        shouldValidate = !!options.validateBeforeSave;
+      } else {
+        shouldValidate = this.schema.options.validateBeforeSave;
+      }
+
       // Validate
-      if (this.schema.options.validateBeforeSave) {
-        this.validate().then(next, next);
+      if (shouldValidate) {
+        // HACK: use $__original_validate to avoid promises so bluebird doesn't
+        // complain
+        if (this.$__original_validate) {
+          this.$__original_validate({ __noPromise: true }, function(error) {
+            next(error);
+          });
+        } else {
+          this.validate({ __noPromise: true }, function(error) {
+            next(error);
+          });
+        }
       } else {
         next();
       }
@@ -3737,8 +3969,7 @@ Object.defineProperty(Schema.prototype, '_defaultMiddleware', {
     hook: 'save',
     isAsync: true,
     fn: function(next, done) {
-      var Promise = PromiseProvider.get(),
-          subdocs = this.$__getAllSubdocs();
+      var subdocs = this.$__getAllSubdocs();
 
       if (!subdocs.length || this.$__preSavingFromParent) {
         done();
@@ -3746,26 +3977,22 @@ Object.defineProperty(Schema.prototype, '_defaultMiddleware', {
         return;
       }
 
-      new Promise.ES6(function(resolve, reject) {
-        async.each(subdocs, function(subdoc, cb) {
-          subdoc.$__preSavingFromParent = true;
-          subdoc.save(function(err) {
-            cb(err);
-          });
-        }, function(error) {
-          for (var i = 0; i < subdocs.length; ++i) {
-            delete subdocs[i].$__preSavingFromParent;
-          }
-          if (error) {
-            reject(error);
-            return;
-          }
-          resolve();
+      async.each(subdocs, function(subdoc, cb) {
+        subdoc.$__preSavingFromParent = true;
+        subdoc.save(function(err) {
+          cb(err);
         });
-      }).then(function() {
+      }, function(error) {
+        for (var i = 0; i < subdocs.length; ++i) {
+          delete subdocs[i].$__preSavingFromParent;
+        }
+        if (error) {
+          done(error);
+          return;
+        }
         next();
         done();
-      }, done);
+      });
     }
   }]
 });
@@ -3810,7 +4037,7 @@ Schema.prototype.tree;
  * @api private
  */
 
-Schema.prototype.defaultOptions = function (options) {
+Schema.prototype.defaultOptions = function(options) {
   if (options && false === options.safe) {
     options.safe = { w: 0 };
   }
@@ -3821,22 +4048,22 @@ Schema.prototype.defaultOptions = function (options) {
   }
 
   options = utils.options({
-      strict: true
-    , bufferCommands: true
-    , capped: false // { size, max, autoIndexId }
-    , versionKey: '__v'
-    , discriminatorKey: '__t'
-    , minimize: true
-    , autoIndex: null
-    , shardKey: null
-    , read: null
-    , validateBeforeSave: true
+    strict: true,
+    bufferCommands: true,
+    capped: false, // { size, max, autoIndexId }
+    versionKey: '__v',
+    discriminatorKey: '__t',
+    minimize: true,
+    autoIndex: null,
+    shardKey: null,
+    read: null,
+    validateBeforeSave: true,
     // the following are only applied at construction time
-    , noId: false // deprecated, use { _id: false }
-    , _id: true
-    , noVirtualId: false // deprecated, use { id: false }
-    , id: true
-//    , pluralization: true  // only set this to override the global option
+    noId: false, // deprecated, use { _id: false }
+    _id: true,
+    noVirtualId: false, // deprecated, use { id: false }
+    id: true,
+    typeKey: 'type'
   }, options);
 
   if (options.read) {
@@ -3859,7 +4086,7 @@ Schema.prototype.defaultOptions = function (options) {
  * @api public
  */
 
-Schema.prototype.add = function add (obj, prefix) {
+Schema.prototype.add = function add(obj, prefix) {
   prefix = prefix || '';
   var keys = Object.keys(obj);
 
@@ -3867,14 +4094,16 @@ Schema.prototype.add = function add (obj, prefix) {
     var key = keys[i];
 
     if (null == obj[key]) {
-      throw new TypeError('Invalid value for schema path `'+ prefix + key +'`');
+      throw new TypeError('Invalid value for schema path `' + prefix + key + '`');
     }
 
     if (Array.isArray(obj[key]) && obj[key].length === 1 && null == obj[key][0]) {
-      throw new TypeError('Invalid value for schema Array path `'+ prefix + key +'`');
+      throw new TypeError('Invalid value for schema Array path `' + prefix + key + '`');
     }
 
-    if (utils.isObject(obj[key]) && (!obj[key].constructor || 'Object' == utils.getFunctionName(obj[key].constructor)) && (!obj[key].type || obj[key].type.type)) {
+    if (utils.isObject(obj[key]) &&
+        (!obj[key].constructor || 'Object' == utils.getFunctionName(obj[key].constructor)) &&
+        (!obj[key][this.options.typeKey] || (this.options.typeKey === 'type' && obj[key].type.type))) {
       if (Object.keys(obj[key]).length) {
         // nested object { last: { name: String }}
         this.nested[prefix + key] = true;
@@ -3948,10 +4177,13 @@ warnings.increment = '`increment` should not be used as a schema path name ' +
  * @api public
  */
 
-Schema.prototype.path = function (path, obj) {
+Schema.prototype.path = function(path, obj) {
   if (obj == undefined) {
     if (this.paths[path]) return this.paths[path];
     if (this.subpaths[path]) return this.subpaths[path];
+    if (this.singleNestedPaths[path]) {
+      return this.singleNestedPaths[path];
+    }
 
     // subpaths?
     return /\.\d+\.?.*$/.test(path)
@@ -3969,9 +4201,9 @@ Schema.prototype.path = function (path, obj) {
   }
 
   // update the tree
-  var subpaths = path.split(/\./)
-    , last = subpaths.pop()
-    , branch = this.tree;
+  var subpaths = path.split(/\./),
+      last = subpaths.pop(),
+      branch = this.tree;
 
   subpaths.forEach(function(sub, i) {
     if (!branch[sub]) branch[sub] = {};
@@ -3989,6 +4221,12 @@ Schema.prototype.path = function (path, obj) {
   branch[last] = utils.clone(obj);
 
   this.paths[path] = Schema.interpretAsType(path, obj, this.options);
+  if (this.paths[path].$isSingleNested) {
+    for (var key in this.paths[path].schema.paths) {
+      this.singleNestedPaths[path + '.' + key] =
+        this.paths[path].schema.paths[key];
+    }
+  }
   return this;
 };
 
@@ -4000,19 +4238,21 @@ Schema.prototype.path = function (path, obj) {
  * @api private
  */
 
-Schema.interpretAsType = function (path, obj, options) {
+Schema.interpretAsType = function(path, obj, options) {
   if (obj.constructor) {
     var constructorName = utils.getFunctionName(obj.constructor);
     if (constructorName != 'Object') {
-      obj = { type: obj };
+      var oldObj = obj;
+      obj = {};
+      obj[options.typeKey] = oldObj;
     }
   }
 
   // Get the type making sure to allow keys named "type"
   // and default to mixed if not specified.
   // { type: { type: String, default: 'freshcut' } }
-  var type = obj.type && !obj.type.type
-    ? obj.type
+  var type = obj[options.typeKey] && (options.typeKey !== 'type' || !obj.type.type)
+    ? obj[options.typeKey]
     : {};
 
   if ('Object' == utils.getFunctionName(type.constructor) || 'mixed' == type) {
@@ -4025,20 +4265,32 @@ Schema.interpretAsType = function (path, obj, options) {
       ? obj.cast
       : type[0];
 
-    if (cast instanceof Schema) {
+    if (cast && cast.instanceOfSchema) {
       return new MongooseTypes.DocumentArray(path, cast, obj);
     }
 
     if ('string' == typeof cast) {
       cast = MongooseTypes[cast.charAt(0).toUpperCase() + cast.substring(1)];
-    } else if (cast && (!cast.type || cast.type.type)
+    } else if (cast && (!cast[options.typeKey] || (options.typeKey === 'type' && cast.type.type))
                     && 'Object' == utils.getFunctionName(cast.constructor)
                     && Object.keys(cast).length) {
-      var opts = { minimize: options.minimize };
-      return new MongooseTypes.DocumentArray(path, new Schema(cast, opts), obj);
+
+      // The `minimize` and `typeKey` options propagate to child schemas
+      // declared inline, like `{ arr: [{ val: { $type: String } }] }`.
+      // See gh-3560
+      var childSchemaOptions = { minimize: options.minimize };
+      if (options.typeKey) {
+        childSchemaOptions.typeKey = options.typeKey;
+      }
+      var childSchema = new Schema(cast, childSchemaOptions);
+      return new MongooseTypes.DocumentArray(path, childSchema, obj);
     }
 
     return new MongooseTypes.Array(path, cast || MongooseTypes.Mixed, obj);
+  }
+
+  if (type && type.instanceOfSchema) {
+    return new MongooseTypes.Embedded(type, path, obj);
   }
 
   var name;
@@ -4075,9 +4327,9 @@ Schema.interpretAsType = function (path, obj, options) {
  * @api public
  */
 
-Schema.prototype.eachPath = function (fn) {
-  var keys = Object.keys(this.paths)
-    , len = keys.length;
+Schema.prototype.eachPath = function(fn) {
+  var keys = Object.keys(this.paths),
+      len = keys.length;
 
   for (var i = 0; i < len; ++i) {
     fn(keys[i], this.paths[keys[i]]);
@@ -4097,9 +4349,9 @@ Schema.prototype.eachPath = function (fn) {
 Schema.prototype.requiredPaths = function requiredPaths(invalidate) {
   if (this._requiredpaths && !invalidate) return this._requiredpaths;
 
-  var paths = Object.keys(this.paths)
-    , i = paths.length
-    , ret = [];
+  var paths = Object.keys(this.paths),
+      i = paths.length,
+      ret = [];
 
   while (i--) {
     var path = paths[i];
@@ -4116,7 +4368,7 @@ Schema.prototype.requiredPaths = function requiredPaths(invalidate) {
  * @return {Array}
  */
 
-Schema.prototype.indexedPaths = function indexedPaths () {
+Schema.prototype.indexedPaths = function indexedPaths() {
   if (this._indexedpaths) return this._indexedpaths;
 
   return this._indexedpaths = this.indexes();
@@ -4132,17 +4384,42 @@ Schema.prototype.indexedPaths = function indexedPaths () {
  * @api public
  */
 
-Schema.prototype.pathType = function (path) {
+Schema.prototype.pathType = function(path) {
   if (path in this.paths) return 'real';
   if (path in this.virtuals) return 'virtual';
   if (path in this.nested) return 'nested';
   if (path in this.subpaths) return 'real';
+  if (path in this.singleNestedPaths) {
+    return 'real';
+  }
 
   if (/\.\d+\.|\.\d+$/.test(path)) {
     return getPositionalPathType(this, path);
   } else {
     return 'adhocOrUndefined';
   }
+};
+
+/**
+ * Returns true iff this path is a child of a mixed schema.
+ *
+ * @param {String} path
+ * @return {Boolean}
+ * @api private
+ */
+
+Schema.prototype.hasMixedParent = function(path) {
+  var subpaths = path.split(/\./g);
+  path = '';
+  for (var i = 0; i < subpaths.length; ++i) {
+    path = i > 0 ? path + '.' + subpaths[i] : subpaths[i];
+    if (path in this.paths &&
+        this.paths[path] instanceof MongooseTypes.Mixed) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 /*!
@@ -4159,9 +4436,9 @@ function getPositionalPathType(self, path) {
   var isNested = false;
   if (!val) return val;
 
-  var last = subpaths.length - 1
-    , subpath
-    , i = 1;
+  var last = subpaths.length - 1,
+      subpath,
+      i = 1;
 
   for (; i < subpaths.length; ++i) {
     isNested = false;
@@ -4190,7 +4467,7 @@ function getPositionalPathType(self, path) {
     val = val.schema.path(subpath);
   }
 
-  self.subpaths[path] = val
+  self.subpaths[path] = val;
   if (val) {
     return 'real';
   }
@@ -4205,8 +4482,8 @@ function getPositionalPathType(self, path) {
  * ignore
  */
 
-function getPositionalPath (self, path) {
-  getPositionalPathType(self, path)
+function getPositionalPath(self, path) {
+  getPositionalPathType(self, path);
   return self.subpaths[path];
 }
 
@@ -4218,7 +4495,7 @@ function getPositionalPath (self, path) {
  * @api public
  */
 
-Schema.prototype.queue = function(name, args){
+Schema.prototype.queue = function(name, args) {
   this.callQueue.push([name, args]);
   return this;
 };
@@ -4310,7 +4587,7 @@ Schema.prototype.post = function(method, fn) {
  * @api public
  */
 
-Schema.prototype.plugin = function (fn, opts) {
+Schema.prototype.plugin = function(fn, opts) {
   fn(this, opts);
   return this;
 };
@@ -4347,7 +4624,7 @@ Schema.prototype.plugin = function (fn, opts) {
  * @api public
  */
 
-Schema.prototype.method = function (name, fn) {
+Schema.prototype.method = function(name, fn) {
   if ('string' != typeof name)
     for (var i in name)
       this.methods[i] = name[i];
@@ -4395,11 +4672,12 @@ Schema.prototype.static = function(name, fn) {
  *     schema.index({ first: 1, last: -1 })
  *
  * @param {Object} fields
- * @param {Object} [options]
+ * @param {Object} [options] Options to pass to [MongoDB driver's `createIndex()` function](http://mongodb.github.io/node-mongodb-native/2.0/api/Collection.html#createIndex)
+ * @param {String} [options.expires=null] Mongoose-specific syntactic sugar, uses [ms](https://www.npmjs.com/package/ms) to convert `expires` option into seconds for the `expireAfterSeconds` in the above link.
  * @api public
  */
 
-Schema.prototype.index = function (fields, options) {
+Schema.prototype.index = function(fields, options) {
   options || (options = {});
 
   if (options.expires)
@@ -4412,12 +4690,19 @@ Schema.prototype.index = function (fields, options) {
 /**
  * Sets/gets a schema option.
  *
+ * ####Example
+ *
+ *     schema.set('strict'); // 'true' by default
+ *     schema.set('strict', false); // Sets 'strict' to false
+ *     schema.set('strict'); // 'false'
+ *
  * @param {String} key option name
  * @param {Object} [value] if not passed, the current option value is returned
+ * @see Schema ./
  * @api public
  */
 
-Schema.prototype.set = function (key, value, _tags) {
+Schema.prototype.set = function(key, value, _tags) {
   if (1 === arguments.length) {
     return this.options[key];
   }
@@ -4445,7 +4730,7 @@ Schema.prototype.set = function (key, value, _tags) {
  * @api public
  */
 
-Schema.prototype.get = function (key) {
+Schema.prototype.get = function(key) {
   return this.options[key];
 };
 
@@ -4460,8 +4745,8 @@ Schema.prototype.get = function (key) {
 var indexTypes = '2d 2dsphere hashed text'.split(' ');
 
 Object.defineProperty(Schema, 'indexTypes', {
-    get: function () { return indexTypes; }
-  , set: function () { throw new Error('Cannot overwrite Schema.indexTypes'); }
+  get: function() { return indexTypes; },
+  set: function() { throw new Error('Cannot overwrite Schema.indexTypes'); }
 });
 
 /**
@@ -4470,7 +4755,7 @@ Object.defineProperty(Schema, 'indexTypes', {
  * @api public
  */
 
-Schema.prototype.indexes = function () {
+Schema.prototype.indexes = function() {
   'use strict';
 
   var indexes = [];
@@ -4491,6 +4776,8 @@ Schema.prototype.indexes = function () {
       path = schema.paths[key];
 
       if (path instanceof MongooseTypes.DocumentArray) {
+        collectIndexes(path.schema, key + '.');
+      } else if (path.$isSingleNested) {
         collectIndexes(path.schema, key + '.');
       } else {
         index = path._index;
@@ -4522,7 +4809,7 @@ Schema.prototype.indexes = function () {
     if (prefix) {
       fixSubIndexPaths(schema, prefix);
     } else {
-      schema._indexes.forEach(function (index) {
+      schema._indexes.forEach(function(index) {
         if (!('background' in index[1])) index[1].background = true;
       });
       indexes = indexes.concat(schema._indexes);
@@ -4540,16 +4827,16 @@ Schema.prototype.indexes = function () {
    * schema._indexes = [ [indexObj, options], [indexObj, options] ..]
    */
 
-  function fixSubIndexPaths (schema, prefix) {
-    var subindexes = schema._indexes
-      , len = subindexes.length
-      , indexObj
-      , newindex
-      , klen
-      , keys
-      , key
-      , i = 0
-      , j;
+  function fixSubIndexPaths(schema, prefix) {
+    var subindexes = schema._indexes,
+        len = subindexes.length,
+        indexObj,
+        newindex,
+        klen,
+        keys,
+        key,
+        i = 0,
+        j;
 
     for (i = 0; i < len; ++i) {
       indexObj = subindexes[i][0];
@@ -4576,11 +4863,11 @@ Schema.prototype.indexes = function () {
  * @return {VirtualType}
  */
 
-Schema.prototype.virtual = function (name, options) {
+Schema.prototype.virtual = function(name, options) {
   var virtuals = this.virtuals;
   var parts = name.split('.');
-  return virtuals[name] = parts.reduce(function (mem, part, i) {
-    mem[part] || (mem[part] = (i === parts.length-1)
+  return virtuals[name] = parts.reduce(function(mem, part, i) {
+    mem[part] || (mem[part] = (i === parts.length - 1)
                             ? new VirtualType(options, name)
                             : {});
     return mem[part];
@@ -4594,7 +4881,7 @@ Schema.prototype.virtual = function (name, options) {
  * @return {VirtualType}
  */
 
-Schema.prototype.virtualpath = function (name) {
+Schema.prototype.virtualpath = function(name) {
   return this.virtuals[name];
 };
 
@@ -4616,6 +4903,56 @@ Schema.prototype.remove = function(path) {
       }
     }, this);
   }
+};
+
+/*!
+ * ignore
+ */
+
+Schema.prototype._getSchema = function(path) {
+  var schema = this;
+  var pathschema = schema.path(path);
+
+  if (pathschema) {
+    return pathschema;
+  }
+
+  // look for arrays
+  return (function search(parts, schema) {
+    var p = parts.length + 1,
+        foundschema,
+        trypath;
+
+    while (p--) {
+      trypath = parts.slice(0, p).join('.');
+      foundschema = schema.path(trypath);
+      if (foundschema) {
+        if (foundschema.caster) {
+          // array of Mixed?
+          if (foundschema.caster instanceof MongooseTypes.Mixed) {
+            return foundschema.caster;
+          }
+
+          // Now that we found the array, we need to check if there
+          // are remaining document paths to look up for casting.
+          // Also we need to handle array.$.path since schema.path
+          // doesn't work for that.
+          // If there is no foundschema.schema we are dealing with
+          // a path like array.$
+          if (p !== parts.length && foundschema.schema) {
+            if ('$' === parts[p]) {
+              // comments.$.comments.$.title
+              return search(parts.slice(p + 1), foundschema.schema);
+            } else {
+              // this is the last path of the selector
+              return search(parts.slice(p), foundschema.schema);
+            }
+          }
+        }
+        return foundschema;
+      }
+    }
+  })(path.split('.'), schema);
 };
 
 /*!
@@ -4662,27 +4999,27 @@ Schema.Types = MongooseTypes = require('./schema/index');
 exports.ObjectId = MongooseTypes.ObjectId;
 
 }).call(this,require("buffer").Buffer)
-},{"./drivers":11,"./promise_provider":23,"./schema/index":30,"./utils":43,"./virtualtype":44,"async":45,"buffer":47,"events":51,"kareem":74}],25:[function(require,module,exports){
+},{"./drivers":11,"./schema/index":32,"./utils":47,"./virtualtype":48,"async":49,"buffer":51,"events":55,"kareem":79}],26:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
 
-var SchemaType = require('../schematype')
-  , CastError = SchemaType.CastError
-  , Types = {
-        Boolean: require('./boolean')
-      , Date: require('./date')
-      , Number: require('./number')
-      , String: require('./string')
-      , ObjectId: require('./objectid')
-      , Buffer: require('./buffer')
-    }
-  , MongooseArray = require('../types').Array
-  , EmbeddedDoc = require('../types').Embedded
-  , Mixed = require('./mixed')
-  , cast = require('../cast')
-  , utils = require('../utils')
-  , isMongooseObject = utils.isMongooseObject;
+var SchemaType = require('../schematype'),
+    CastError = SchemaType.CastError,
+    Types = {
+      Boolean: require('./boolean'),
+      Date: require('./date'),
+      Number: require('./number'),
+      String: require('./string'),
+      ObjectId: require('./objectid'),
+      Buffer: require('./buffer')
+    },
+    MongooseArray = require('../types').Array,
+    EmbeddedDoc = require('../types').Embedded,
+    Mixed = require('./mixed'),
+    cast = require('../cast'),
+    utils = require('../utils'),
+    isMongooseObject = utils.isMongooseObject;
 
 /**
  * Array SchemaType constructor
@@ -4694,7 +5031,7 @@ var SchemaType = require('../schematype')
  * @api private
  */
 
-function SchemaArray (key, cast, options) {
+function SchemaArray(key, cast, options) {
   if (cast) {
     var castOptions = {};
 
@@ -4727,16 +5064,16 @@ function SchemaArray (key, cast, options) {
 
   SchemaType.call(this, key, options, 'Array');
 
-  var self = this
-    , defaultArr
-    , fn;
+  var self = this,
+      defaultArr,
+      fn;
 
   if (this.defaultValue) {
     defaultArr = this.defaultValue;
     fn = 'function' == typeof defaultArr;
   }
 
-  this.default(function(){
+  this.default(function() {
     var arr = fn ? defaultArr() : defaultArr || [];
     return new MongooseArray(arr, self.path, this);
   });
@@ -4763,7 +5100,7 @@ SchemaArray.prototype.constructor = SchemaArray;
  * @api private
  */
 
-SchemaArray.prototype.checkRequired = function (value) {
+SchemaArray.prototype.checkRequired = function(value) {
   return !!(value && value.length);
 };
 
@@ -4775,7 +5112,7 @@ SchemaArray.prototype.checkRequired = function (value) {
  * @api private
  */
 
-SchemaArray.prototype.applyGetters = function (value, scope) {
+SchemaArray.prototype.applyGetters = function(value, scope) {
   if (this.caster.options && this.caster.options.ref) {
     // means the object id was populated
     return value;
@@ -4793,7 +5130,7 @@ SchemaArray.prototype.applyGetters = function (value, scope) {
  * @api private
  */
 
-SchemaArray.prototype.cast = function (value, doc, init) {
+SchemaArray.prototype.cast = function(value, doc, init) {
   if (Array.isArray(value)) {
 
     if (!value.length && doc) {
@@ -4841,9 +5178,9 @@ SchemaArray.prototype.cast = function (value, doc, init) {
  * @api private
  */
 
-SchemaArray.prototype.castForQuery = function ($conditional, value) {
-  var handler
-    , val;
+SchemaArray.prototype.castForQuery = function($conditional, value) {
+  var handler,
+      val;
 
   if (arguments.length === 2) {
     handler = this.$conditionalHandlers[$conditional];
@@ -4862,7 +5199,10 @@ SchemaArray.prototype.castForQuery = function ($conditional, value) {
     var caster = this.caster;
 
     if (Array.isArray(val)) {
-      val = val.map(function (v) {
+      val = val.map(function(v) {
+        if (utils.isObject(v) && v.$elemMatch) {
+          return v;
+        }
         if (method) v = method.call(caster, v);
         return isMongooseObject(v) ?
           v.toObject({ virtuals: false }) :
@@ -4885,14 +5225,14 @@ SchemaArray.prototype.castForQuery = function ($conditional, value) {
  * $atomic cast helpers
  */
 
-function castToNumber (val) {
+function castToNumber(val) {
   return Types.Number.prototype.cast.call(this, val);
 }
 
-function castArraysOfNumbers (arr, self) {
+function castArraysOfNumbers(arr, self) {
   self || (self = this);
 
-  arr.forEach(function (v, i) {
+  arr.forEach(function(v, i) {
     if (Array.isArray(v)) {
       castArraysOfNumbers(v, self);
     } else {
@@ -4901,7 +5241,7 @@ function castArraysOfNumbers (arr, self) {
   });
 }
 
-function cast$near (val) {
+function cast$near(val) {
   if (Array.isArray(val)) {
     castArraysOfNumbers(val, this);
     return val;
@@ -4914,7 +5254,7 @@ function cast$near (val) {
   return SchemaArray.prototype.castForQuery.call(this, val);
 }
 
-function cast$geometry (val, self) {
+function cast$geometry(val, self) {
   switch (val.$geometry.type) {
     case 'Polygon':
     case 'LineString':
@@ -4933,7 +5273,7 @@ function cast$geometry (val, self) {
   return val;
 }
 
-function cast$within (val) {
+function cast$within(val) {
   var self = this;
 
   if (val.$maxDistance) {
@@ -4942,21 +5282,21 @@ function cast$within (val) {
 
   if (val.$box || val.$polygon) {
     var type = val.$box ? '$box' : '$polygon';
-    val[type].forEach(function (arr) {
+    val[type].forEach(function(arr) {
       if (!Array.isArray(arr)) {
         var msg = 'Invalid $within $box argument. '
                 + 'Expected an array, received ' + arr;
         throw new TypeError(msg);
       }
-      arr.forEach(function (v, i) {
+      arr.forEach(function(v, i) {
         arr[i] = castToNumber.call(this, v);
       });
     });
   } else if (val.$center || val.$centerSphere) {
     type = val.$center ? '$center' : '$centerSphere';
-    val[type].forEach(function (item, i) {
+    val[type].forEach(function(item, i) {
       if (Array.isArray(item)) {
-        item.forEach(function (v, j) {
+        item.forEach(function(v, j) {
           item[j] = castToNumber.call(this, v);
         });
       } else {
@@ -4970,12 +5310,12 @@ function cast$within (val) {
   return val;
 }
 
-function cast$all (val) {
+function cast$all(val) {
   if (!Array.isArray(val)) {
     val = [val];
   }
 
-  val = val.map(function (v) {
+  val = val.map(function(v) {
     if (utils.isObject(v)) {
       var o = {};
       o[this.path] = v;
@@ -4984,11 +5324,10 @@ function cast$all (val) {
     return v;
   }, this);
 
-  return val;
+  return this.castForQuery(val);
 }
 
-function cast$elemMatch (val) {
-  var hasDollarKey = false;
+function cast$elemMatch(val) {
   var keys = Object.keys(val);
   var numKeys = keys.length;
   var key;
@@ -4998,17 +5337,13 @@ function cast$elemMatch (val) {
     value = val[key];
     if (key.indexOf('$') === 0 && value) {
       val[key] = this.castForQuery(key, value);
-      hasDollarKey = true;
     }
-  }
-  if (hasDollarKey) {
-    return val;
   }
 
   return cast(this.casterConstructor.schema, val);
 }
 
-function cast$geoIntersects (val) {
+function cast$geoIntersects(val) {
   var geo = val.$geometry;
   if (!geo) return;
 
@@ -5060,7 +5395,7 @@ handle.$regex = SchemaArray.prototype.castForQuery;
 
 module.exports = SchemaArray;
 
-},{"../cast":4,"../schematype":35,"../types":41,"../utils":43,"./boolean":26,"./buffer":27,"./date":28,"./mixed":31,"./number":32,"./objectid":33,"./string":34}],26:[function(require,module,exports){
+},{"../cast":4,"../schematype":38,"../types":44,"../utils":47,"./boolean":27,"./buffer":28,"./date":29,"./mixed":33,"./number":34,"./objectid":35,"./string":37}],27:[function(require,module,exports){
 /*!
  * Module dependencies.
  */
@@ -5078,7 +5413,7 @@ var SchemaType = require('../schematype');
  * @api private
  */
 
-function SchemaBoolean (path, options) {
+function SchemaBoolean(path, options) {
   SchemaType.call(this, path, options, 'Boolean');
 }
 
@@ -5102,7 +5437,7 @@ SchemaBoolean.prototype.constructor = SchemaBoolean;
  * @api private
  */
 
-SchemaBoolean.prototype.checkRequired = function (value) {
+SchemaBoolean.prototype.checkRequired = function(value) {
   return value === true || value === false;
 };
 
@@ -5113,32 +5448,16 @@ SchemaBoolean.prototype.checkRequired = function (value) {
  * @api private
  */
 
-SchemaBoolean.prototype.cast = function (value) {
+SchemaBoolean.prototype.cast = function(value) {
   if (null === value) return value;
   if ('0' === value) return false;
   if ('true' === value) return true;
   if ('false' === value) return false;
-  return !! value;
+  return !!value;
 };
 
-/*!
- * ignore
- */
-
-function handleArray (val) {
-  var self = this;
-  if (!Array.isArray(val)) {
-    return [self.cast(val)];
-  }
-  return val.map(function (m) {
-    return self.cast(m);
-  });
-}
-
 SchemaBoolean.$conditionalHandlers =
-  utils.options(SchemaType.prototype.$conditionalHandlers, {
-    '$in': handleArray
-  });
+  utils.options(SchemaType.prototype.$conditionalHandlers, {});
 
 /**
  * Casts contents for queries.
@@ -5148,7 +5467,7 @@ SchemaBoolean.$conditionalHandlers =
  * @api private
  */
 
-SchemaBoolean.prototype.castForQuery = function ($conditional, val) {
+SchemaBoolean.prototype.castForQuery = function($conditional, val) {
   var handler;
   if (2 === arguments.length) {
     handler = SchemaBoolean.$conditionalHandlers[$conditional];
@@ -5169,12 +5488,13 @@ SchemaBoolean.prototype.castForQuery = function ($conditional, val) {
 
 module.exports = SchemaBoolean;
 
-},{"../schematype":35,"../utils":43}],27:[function(require,module,exports){
+},{"../schematype":38,"../utils":47}],28:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module dependencies.
  */
 
+var handleBitwiseOperator = require('./operators/bitwise');
 var utils = require('../utils');
 
 var MongooseBuffer = require('../types').Buffer;
@@ -5193,7 +5513,7 @@ var Document;
  * @api private
  */
 
-function SchemaBuffer (key, options) {
+function SchemaBuffer(key, options) {
   SchemaType.call(this, key, options, 'Buffer');
 }
 
@@ -5217,7 +5537,7 @@ SchemaBuffer.prototype.constructor = SchemaBuffer;
  * @api private
  */
 
-SchemaBuffer.prototype.checkRequired = function (value, doc) {
+SchemaBuffer.prototype.checkRequired = function(value, doc) {
   if (SchemaType._isRef(this, value, doc, true)) {
     return null != value;
   } else {
@@ -5234,7 +5554,7 @@ SchemaBuffer.prototype.checkRequired = function (value, doc) {
  * @api private
  */
 
-SchemaBuffer.prototype.cast = function (value, doc, init) {
+SchemaBuffer.prototype.cast = function(value, doc, init) {
   var ret;
   if (SchemaType._isRef(this, value, doc, init)) {
     // wait! we may need to cast this to a document
@@ -5307,29 +5627,20 @@ SchemaBuffer.prototype.cast = function (value, doc, init) {
 /*!
  * ignore
  */
-function handleSingle (val) {
+function handleSingle(val) {
   return this.castForQuery(val);
-}
-
-function handleArray (val) {
-  var self = this;
-  if (!Array.isArray(val)) {
-    return [this.castForQuery(val)];
-  }
-  return val.map( function (m) {
-    return self.castForQuery(m);
-  });
 }
 
 SchemaBuffer.prototype.$conditionalHandlers =
   utils.options(SchemaType.prototype.$conditionalHandlers, {
+    '$bitsAllClear': handleBitwiseOperator,
+    '$bitsAnyClear': handleBitwiseOperator,
+    '$bitsAllSet': handleBitwiseOperator,
+    '$bitsAnySet': handleBitwiseOperator,
     '$gt' : handleSingle,
     '$gte': handleSingle,
-    '$in' : handleArray,
     '$lt' : handleSingle,
-    '$lte': handleSingle,
-    '$ne' : handleSingle,
-    '$nin': handleArray
+    '$lte': handleSingle
   });
 
 /**
@@ -5340,7 +5651,7 @@ SchemaBuffer.prototype.$conditionalHandlers =
  * @api private
  */
 
-SchemaBuffer.prototype.castForQuery = function ($conditional, val) {
+SchemaBuffer.prototype.castForQuery = function($conditional, val) {
   var handler;
   if (arguments.length === 2) {
     handler = this.$conditionalHandlers[$conditional];
@@ -5360,7 +5671,7 @@ SchemaBuffer.prototype.castForQuery = function ($conditional, val) {
 module.exports = SchemaBuffer;
 
 }).call(this,require("buffer").Buffer)
-},{"../schematype":35,"../types":41,"../utils":43,"./../document":5,"buffer":47}],28:[function(require,module,exports){
+},{"../schematype":38,"../types":44,"../utils":47,"./../document":5,"./operators/bitwise":36,"buffer":51}],29:[function(require,module,exports){
 /*!
  * Module requirements.
  */
@@ -5381,7 +5692,7 @@ var CastError = SchemaType.CastError;
  * @api private
  */
 
-function SchemaDate (key, options) {
+function SchemaDate(key, options) {
   SchemaType.call(this, key, options, 'Date');
 }
 
@@ -5430,7 +5741,7 @@ SchemaDate.prototype.constructor = SchemaDate;
  * @api public
  */
 
-SchemaDate.prototype.expires = function (when) {
+SchemaDate.prototype.expires = function(when) {
   if (!this._index || 'Object' !== this._index.constructor.name) {
     this._index = {};
   }
@@ -5446,7 +5757,7 @@ SchemaDate.prototype.expires = function (when) {
  * @api private
  */
 
-SchemaDate.prototype.checkRequired = function (value) {
+SchemaDate.prototype.checkRequired = function(value) {
   return value instanceof Date;
 };
 
@@ -5481,9 +5792,9 @@ SchemaDate.prototype.checkRequired = function (value) {
  * @api public
  */
 
-SchemaDate.prototype.min = function (value, message) {
+SchemaDate.prototype.min = function(value, message) {
   if (this.minValidator) {
-    this.validators = this.validators.filter(function (v) {
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.minValidator;
     }, this);
   }
@@ -5493,7 +5804,7 @@ SchemaDate.prototype.min = function (value, message) {
     msg = msg.replace(/{MIN}/, (value === Date.now ? 'Date.now()' : this.cast(value).toString()));
     var self = this;
     this.validators.push({
-      validator: this.minValidator = function (val) {
+      validator: this.minValidator = function(val) {
         var min = (value === Date.now ? value() : self.cast(value));
         return val === null || val.valueOf() >= min.valueOf();
       },
@@ -5537,9 +5848,9 @@ SchemaDate.prototype.min = function (value, message) {
  * @api public
  */
 
-SchemaDate.prototype.max = function (value, message) {
+SchemaDate.prototype.max = function(value, message) {
   if (this.maxValidator) {
-    this.validators = this.validators.filter(function(v){
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.maxValidator;
     }, this);
   }
@@ -5569,10 +5880,10 @@ SchemaDate.prototype.max = function (value, message) {
  * @api private
  */
 
-SchemaDate.prototype.cast = function (value) {
+SchemaDate.prototype.cast = function(value) {
   // If null or undefined
   if (value == null || value === '')
-    return value;
+    return null;
 
   if (value instanceof Date)
     return value;
@@ -5603,30 +5914,16 @@ SchemaDate.prototype.cast = function (value) {
  * @api private
  */
 
-function handleSingle (val) {
+function handleSingle(val) {
   return this.cast(val);
-}
-
-function handleArray (val) {
-  var self = this;
-  if (!Array.isArray(val)) {
-    return [this.cast(val)];
-  }
-  return val.map( function (m) {
-    return self.cast(m);
-  });
 }
 
 SchemaDate.prototype.$conditionalHandlers =
   utils.options(SchemaType.prototype.$conditionalHandlers, {
-    '$all': handleArray,
     '$gt': handleSingle,
     '$gte': handleSingle,
-    '$in': handleArray,
     '$lt': handleSingle,
-    '$lte': handleSingle,
-    '$ne': handleSingle,
-    '$nin': handleArray
+    '$lte': handleSingle
   });
 
 
@@ -5638,7 +5935,7 @@ SchemaDate.prototype.$conditionalHandlers =
  * @api private
  */
 
-SchemaDate.prototype.castForQuery = function ($conditional, val) {
+SchemaDate.prototype.castForQuery = function($conditional, val) {
   var handler;
 
   if (2 !== arguments.length) {
@@ -5660,7 +5957,7 @@ SchemaDate.prototype.castForQuery = function ($conditional, val) {
 
 module.exports = SchemaDate;
 
-},{"../error":12,"../schematype":35,"../utils":43}],29:[function(require,module,exports){
+},{"../error":12,"../schematype":38,"../utils":47}],30:[function(require,module,exports){
 /* eslint no-empty: 1 */
 
 /*!
@@ -5668,6 +5965,7 @@ module.exports = SchemaDate;
  */
 
 var ArrayType = require('./array');
+var CastError = require('../error/cast');
 var MongooseDocumentArray = require('../types/documentarray');
 var SchemaType = require('../schematype');
 var Subdocument = require('../types/embedded');
@@ -5682,9 +5980,9 @@ var Subdocument = require('../types/embedded');
  * @api private
  */
 
-function DocumentArray (key, schema, options) {
+function DocumentArray(key, schema, options) {
   // compile an embedded document for this schema
-  function EmbeddedDocument () {
+  function EmbeddedDocument() {
     Subdocument.apply(this, arguments);
   }
 
@@ -5709,7 +6007,7 @@ function DocumentArray (key, schema, options) {
   var path = this.path;
   var fn = this.defaultValue;
 
-  this.default(function(){
+  this.default(function() {
     var arr = fn.call(this);
     if (!Array.isArray(arr)) arr = [arr];
     return new MongooseDocumentArray(arr, path, this);
@@ -5736,8 +6034,8 @@ DocumentArray.prototype.constructor = DocumentArray;
  * @api private
  */
 
-DocumentArray.prototype.doValidate = function (array, fn, scope) {
-  SchemaType.prototype.doValidate.call(this, array, function (err) {
+DocumentArray.prototype.doValidate = function(array, fn, scope) {
+  SchemaType.prototype.doValidate.call(this, array, function(err) {
     if (err) {
       return fn(err);
     }
@@ -5759,7 +6057,7 @@ DocumentArray.prototype.doValidate = function (array, fn, scope) {
         continue;
       }
 
-      doc.validate(function (err) {
+      doc.validate({ __noPromise: true }, function(err) {
         if (err) {
           error = err;
         }
@@ -5780,12 +6078,12 @@ DocumentArray.prototype.doValidate = function (array, fn, scope) {
  * @api private
  */
 
-DocumentArray.prototype.doValidateSync = function (array, scope) {
+DocumentArray.prototype.doValidateSync = function(array, scope) {
   var schemaTypeError = SchemaType.prototype.doValidateSync.call(this, array, scope);
   if (schemaTypeError) return schemaTypeError;
 
-  var count = array && array.length
-    , resultError = null;
+  var count = array && array.length,
+      resultError = null;
 
   if (!count) return;
 
@@ -5818,10 +6116,10 @@ DocumentArray.prototype.doValidateSync = function (array, scope) {
  * @api private
  */
 
-DocumentArray.prototype.cast = function (value, doc, init, prev) {
-  var selected
-    , subdoc
-    , i;
+DocumentArray.prototype.cast = function(value, doc, init, prev) {
+  var selected,
+      subdoc,
+      i;
 
   if (!Array.isArray(value)) {
     // gh-2442 mark whole array as modified if we're initializing a doc from
@@ -5852,7 +6150,7 @@ DocumentArray.prototype.cast = function (value, doc, init, prev) {
       } else {
         try {
           subdoc = prev.id(value[i]._id);
-        } catch(e) {}
+        } catch (e) {}
 
         if (prev && subdoc) {
           // handle resetting doc with existing id but differing data
@@ -5862,10 +6160,15 @@ DocumentArray.prototype.cast = function (value, doc, init, prev) {
           // see gh-746
           value[i] = subdoc;
         } else {
-          subdoc = new this.casterConstructor(value[i], value, undefined, undefined, i);
-          // if set() is hooked it will have no return value
-          // see gh-746
-          value[i] = subdoc;
+          try {
+            subdoc = new this.casterConstructor(value[i], value, undefined,
+              undefined, i);
+            // if set() is hooked it will have no return value
+            // see gh-746
+            value[i] = subdoc;
+          } catch (error) {
+            throw new CastError('embedded', value[i], value._path);
+          }
         }
       }
     }
@@ -5883,15 +6186,15 @@ DocumentArray.prototype.cast = function (value, doc, init, prev) {
  * @param {Boolean|undefined} init - if we are being created part of a query result
  */
 
-function scopePaths (array, fields, init) {
+function scopePaths(array, fields, init) {
   if (!(init && fields)) return undefined;
 
-  var path = array.path + '.'
-    , keys = Object.keys(fields)
-    , i = keys.length
-    , selected = {}
-    , hasKeys
-    , key;
+  var path = array.path + '.',
+      keys = Object.keys(fields),
+      i = keys.length,
+      selected = {},
+      hasKeys,
+      key;
 
   while (i--) {
     key = keys[i];
@@ -5910,7 +6213,146 @@ function scopePaths (array, fields, init) {
 
 module.exports = DocumentArray;
 
-},{"../schematype":35,"../types/documentarray":39,"../types/embedded":40,"./array":25}],30:[function(require,module,exports){
+},{"../error/cast":13,"../schematype":38,"../types/documentarray":42,"../types/embedded":43,"./array":26}],31:[function(require,module,exports){
+var SchemaType = require('../schematype');
+var Subdocument = require('../types/subdocument');
+
+module.exports = Embedded;
+
+/**
+ * Sub-schema schematype constructor
+ *
+ * @param {Schema} schema
+ * @param {String} key
+ * @param {Object} options
+ * @inherits SchemaType
+ * @api private
+ */
+
+function Embedded(schema, path, options) {
+  var _embedded = function(value, path, parent) {
+    var _this = this;
+    Subdocument.apply(this, arguments);
+    this.$parent = parent;
+    if (parent) {
+      parent.on('save', function() {
+        _this.emit('save', _this);
+      });
+    }
+  };
+  _embedded.prototype = Object.create(Subdocument.prototype);
+  _embedded.prototype.$__setSchema(schema);
+  _embedded.schema = schema;
+  _embedded.$isSingleNested = true;
+  _embedded.prototype.$basePath = path;
+
+  // apply methods
+  for (var i in schema.methods) {
+    _embedded.prototype[i] = schema.methods[i];
+  }
+
+  // apply statics
+  for (i in schema.statics) {
+    _embedded[i] = schema.statics[i];
+  }
+
+  this.caster = _embedded;
+  this.schema = schema;
+  this.$isSingleNested = true;
+  SchemaType.call(this, path, options, 'Embedded');
+}
+
+Embedded.prototype = Object.create(SchemaType.prototype);
+
+/**
+ * Casts contents
+ *
+ * @param {Object} value
+ * @api private
+ */
+
+Embedded.prototype.cast = function(val, doc, init) {
+  if (val && val.$isSingleNested) {
+    return val;
+  }
+  var subdoc = new this.caster(undefined, undefined, doc);
+  if (init) {
+    subdoc.init(val);
+  } else {
+    subdoc.set(val, undefined, true);
+  }
+  return subdoc;
+};
+
+/**
+ * Casts contents for query
+ *
+ * @param {string} [$conditional] optional query operator (like `$eq` or `$in`)
+ * @param {any} value
+ * @api private
+ */
+
+Embedded.prototype.castForQuery = function($conditional, val) {
+  var handler;
+  if (arguments.length === 2) {
+    handler = this.$conditionalHandlers[$conditional];
+    if (!handler) {
+      throw new Error('Can\'t use ' + $conditional);
+    }
+    return handler.call(this, val);
+  } else {
+    val = $conditional;
+    return new this.caster(val).
+      toObject({ virtuals: false });
+  }
+};
+
+/**
+ * Async validation on this single nested doc.
+ *
+ * @api private
+ */
+
+Embedded.prototype.doValidate = function(value, fn) {
+  SchemaType.prototype.doValidate.call(this, value, function(error) {
+    if (error) {
+      return fn(error);
+    }
+    if (!value) {
+      return fn(null);
+    }
+    value.validate(fn, { __noPromise: true });
+  });
+};
+
+/**
+ * Synchronously validate this single nested doc
+ *
+ * @api private
+ */
+
+Embedded.prototype.doValidateSync = function(value) {
+  var schemaTypeError = SchemaType.prototype.doValidateSync.call(this, value);
+  if (schemaTypeError) {
+    return schemaTypeError;
+  }
+  if (!value) {
+    return;
+  }
+  return value.validateSync();
+};
+
+/**
+ * Required validator for single nested docs
+ *
+ * @api private
+ */
+
+Embedded.prototype.checkRequired = function(value) {
+  return !!value && value.$isSingleNested;
+};
+
+},{"../schematype":38,"../types/subdocument":46}],32:[function(require,module,exports){
 
 /*!
  * Module exports.
@@ -5923,6 +6365,8 @@ exports.Number = require('./number');
 exports.Boolean = require('./boolean');
 
 exports.DocumentArray = require('./documentarray');
+
+exports.Embedded = require('./embedded');
 
 exports.Array = require('./array');
 
@@ -5940,7 +6384,7 @@ exports.Oid = exports.ObjectId;
 exports.Object = exports.Mixed;
 exports.Bool = exports.Boolean;
 
-},{"./array":25,"./boolean":26,"./buffer":27,"./date":28,"./documentarray":29,"./mixed":31,"./number":32,"./objectid":33,"./string":34}],31:[function(require,module,exports){
+},{"./array":26,"./boolean":27,"./buffer":28,"./date":29,"./documentarray":30,"./embedded":31,"./mixed":33,"./number":34,"./objectid":35,"./string":37}],33:[function(require,module,exports){
 
 /*!
  * Module dependencies.
@@ -5958,7 +6402,7 @@ var utils = require('../utils');
  * @api private
  */
 
-function Mixed (path, options) {
+function Mixed(path, options) {
   if (options && options.default) {
     var def = options.default;
     if (Array.isArray(def) && 0 === def.length) {
@@ -5968,7 +6412,7 @@ function Mixed (path, options) {
                utils.isObject(def) &&
                0 === Object.keys(def).length) {
       // prevent odd "shared" objects between documents
-      options.default = function () {
+      options.default = function() {
         return {};
       };
     }
@@ -5997,7 +6441,7 @@ Mixed.prototype.constructor = Mixed;
  * @api private
  */
 
-Mixed.prototype.checkRequired = function (val) {
+Mixed.prototype.checkRequired = function(val) {
   return (val !== undefined) && (val !== null);
 };
 
@@ -6010,7 +6454,7 @@ Mixed.prototype.checkRequired = function (val) {
  * @api private
  */
 
-Mixed.prototype.cast = function (val) {
+Mixed.prototype.cast = function(val) {
   return val;
 };
 
@@ -6022,7 +6466,7 @@ Mixed.prototype.cast = function (val) {
  * @api private
  */
 
-Mixed.prototype.castForQuery = function ($cond, val) {
+Mixed.prototype.castForQuery = function($cond, val) {
   if (arguments.length === 2) return val;
   return $cond;
 };
@@ -6033,17 +6477,18 @@ Mixed.prototype.castForQuery = function ($cond, val) {
 
 module.exports = Mixed;
 
-},{"../schematype":35,"../utils":43}],32:[function(require,module,exports){
+},{"../schematype":38,"../utils":47}],34:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module requirements.
  */
 
-var SchemaType = require('../schematype')
-  , CastError = SchemaType.CastError
-  , errorMessages = require('../error').messages
-  , utils = require('../utils')
-  , Document;
+var SchemaType = require('../schematype');
+var CastError = SchemaType.CastError;
+var handleBitwiseOperator = require('./operators/bitwise');
+var errorMessages = require('../error').messages;
+var utils = require('../utils');
+var Document;
 
 /**
  * Number SchemaType constructor.
@@ -6054,7 +6499,7 @@ var SchemaType = require('../schematype')
  * @api private
  */
 
-function SchemaNumber (key, options) {
+function SchemaNumber(key, options) {
   SchemaType.call(this, key, options, 'Number');
 }
 
@@ -6078,7 +6523,7 @@ SchemaNumber.prototype.constructor = SchemaNumber;
  * @api private
  */
 
-SchemaNumber.prototype.checkRequired = function checkRequired (value, doc) {
+SchemaNumber.prototype.checkRequired = function checkRequired(value, doc) {
   if (SchemaType._isRef(this, value, doc, true)) {
     return null != value;
   } else {
@@ -6117,9 +6562,9 @@ SchemaNumber.prototype.checkRequired = function checkRequired (value, doc) {
  * @api public
  */
 
-SchemaNumber.prototype.min = function (value, message) {
+SchemaNumber.prototype.min = function(value, message) {
   if (this.minValidator) {
-    this.validators = this.validators.filter(function (v) {
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.minValidator;
     }, this);
   }
@@ -6128,8 +6573,8 @@ SchemaNumber.prototype.min = function (value, message) {
     var msg = message || errorMessages.Number.min;
     msg = msg.replace(/{MIN}/, value);
     this.validators.push({
-      validator: this.minValidator = function (v) {
-        return v === null || v >= value;
+      validator: this.minValidator = function(v) {
+        return v == null || v >= value;
       },
       message: msg,
       type: 'min',
@@ -6171,9 +6616,9 @@ SchemaNumber.prototype.min = function (value, message) {
  * @api public
  */
 
-SchemaNumber.prototype.max = function (value, message) {
+SchemaNumber.prototype.max = function(value, message) {
   if (this.maxValidator) {
-    this.validators = this.validators.filter(function(v){
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.maxValidator;
     }, this);
   }
@@ -6183,7 +6628,7 @@ SchemaNumber.prototype.max = function (value, message) {
     msg = msg.replace(/{MAX}/, value);
     this.validators.push({
       validator: this.maxValidator = function(v) {
-        return v === null || v <= value;
+        return v == null || v <= value;
       },
       message: msg,
       type: 'max',
@@ -6203,7 +6648,7 @@ SchemaNumber.prototype.max = function (value, message) {
  * @api private
  */
 
-SchemaNumber.prototype.cast = function (value, doc, init) {
+SchemaNumber.prototype.cast = function(value, doc, init) {
   if (SchemaType._isRef(this, value, doc, init)) {
     // wait! we may need to cast this to a document
 
@@ -6241,10 +6686,12 @@ SchemaNumber.prototype.cast = function (value, doc, init) {
     ? value._id // documents
     : value;
 
-  if (!isNaN(val)){
+  if (!isNaN(val)) {
     if (null === val) return val;
     if ('' === val) return null;
-    if ('string' == typeof val) val = Number(val);
+    if (typeof val === 'string' || typeof val === 'boolean') {
+      val = Number(val);
+    }
     if (val instanceof Number) return val;
     if ('number' == typeof val) return val;
     if (val.toString && !Array.isArray(val) &&
@@ -6260,31 +6707,31 @@ SchemaNumber.prototype.cast = function (value, doc, init) {
  * ignore
  */
 
-function handleSingle (val) {
+function handleSingle(val) {
   return this.cast(val);
 }
 
-function handleArray (val) {
+function handleArray(val) {
   var self = this;
   if (!Array.isArray(val)) {
     return [this.cast(val)];
   }
-  return val.map(function (m) {
+  return val.map(function(m) {
     return self.cast(m);
   });
 }
 
 SchemaNumber.prototype.$conditionalHandlers =
   utils.options(SchemaType.prototype.$conditionalHandlers, {
-    '$all': handleArray,
+    '$bitsAllClear': handleBitwiseOperator,
+    '$bitsAnyClear': handleBitwiseOperator,
+    '$bitsAllSet': handleBitwiseOperator,
+    '$bitsAnySet': handleBitwiseOperator,
     '$gt' : handleSingle,
     '$gte': handleSingle,
-    '$in' : handleArray,
     '$lt' : handleSingle,
     '$lte': handleSingle,
-    '$ne' : handleSingle,
-    '$mod': handleArray,
-    '$nin': handleArray
+    '$mod': handleArray
   });
 
 /**
@@ -6295,7 +6742,7 @@ SchemaNumber.prototype.$conditionalHandlers =
  * @api private
  */
 
-SchemaNumber.prototype.castForQuery = function ($conditional, val) {
+SchemaNumber.prototype.castForQuery = function($conditional, val) {
   var handler;
   if (arguments.length === 2) {
     handler = this.$conditionalHandlers[$conditional];
@@ -6315,7 +6762,7 @@ SchemaNumber.prototype.castForQuery = function ($conditional, val) {
 module.exports = SchemaNumber;
 
 }).call(this,require("buffer").Buffer)
-},{"../error":12,"../schematype":35,"../utils":43,"./../document":5,"buffer":47}],33:[function(require,module,exports){
+},{"../error":12,"../schematype":38,"../utils":47,"./../document":5,"./operators/bitwise":36,"buffer":51}],35:[function(require,module,exports){
 (function (Buffer){
 /* eslint no-empty: 1 */
 
@@ -6323,11 +6770,11 @@ module.exports = SchemaNumber;
  * Module dependencies.
  */
 
-var SchemaType = require('../schematype')
-  , CastError = SchemaType.CastError
-  , oid = require('../types/objectid')
-  , utils = require('../utils')
-  , Document;
+var SchemaType = require('../schematype'),
+    CastError = SchemaType.CastError,
+    oid = require('../types/objectid'),
+    utils = require('../utils'),
+    Document;
 
 /**
  * ObjectId SchemaType constructor.
@@ -6338,7 +6785,7 @@ var SchemaType = require('../schematype')
  * @api private
  */
 
-function ObjectId (key, options) {
+function ObjectId(key, options) {
   SchemaType.call(this, key, options, 'ObjectID');
 }
 
@@ -6363,7 +6810,7 @@ ObjectId.prototype.constructor = ObjectId;
  * @return {SchemaType} this
  */
 
-ObjectId.prototype.auto = function (turnOn) {
+ObjectId.prototype.auto = function(turnOn) {
   if (turnOn) {
     this.default(defaultId);
     this.set(resetId);
@@ -6378,7 +6825,7 @@ ObjectId.prototype.auto = function (turnOn) {
  * @api private
  */
 
-ObjectId.prototype.checkRequired = function checkRequired (value, doc) {
+ObjectId.prototype.checkRequired = function checkRequired(value, doc) {
   if (SchemaType._isRef(this, value, doc, true)) {
     return null != value;
   } else {
@@ -6395,7 +6842,7 @@ ObjectId.prototype.checkRequired = function checkRequired (value, doc) {
  * @api private
  */
 
-ObjectId.prototype.cast = function (value, doc, init) {
+ObjectId.prototype.cast = function(value, doc, init) {
   if (SchemaType._isRef(this, value, doc, init)) {
     // wait! we may need to cast this to a document
 
@@ -6442,7 +6889,7 @@ ObjectId.prototype.cast = function (value, doc, init) {
     if (value._id.toString instanceof Function) {
       try {
         return oid.createFromHexString(value._id.toString());
-      } catch(e) {}
+      } catch (e) {}
     }
   }
 
@@ -6461,30 +6908,16 @@ ObjectId.prototype.cast = function (value, doc, init) {
  * ignore
  */
 
-function handleSingle (val) {
+function handleSingle(val) {
   return this.cast(val);
-}
-
-function handleArray (val) {
-  var self = this;
-  if (!Array.isArray(val)) {
-    return [self.cast(val)];
-  }
-  return val.map(function (m) {
-    return self.cast(m);
-  });
 }
 
 ObjectId.prototype.$conditionalHandlers =
   utils.options(SchemaType.prototype.$conditionalHandlers, {
-    '$all': handleArray,
     '$gt': handleSingle,
     '$gte': handleSingle,
-    '$in': handleArray,
     '$lt': handleSingle,
-    '$lte': handleSingle,
-    '$ne': handleSingle,
-    '$nin': handleArray
+    '$lte': handleSingle
   });
 
 /**
@@ -6495,7 +6928,7 @@ ObjectId.prototype.$conditionalHandlers =
  * @api private
  */
 
-ObjectId.prototype.castForQuery = function ($conditional, val) {
+ObjectId.prototype.castForQuery = function($conditional, val) {
   var handler;
   if (arguments.length === 2) {
     handler = this.$conditionalHandlers[$conditional];
@@ -6511,11 +6944,11 @@ ObjectId.prototype.castForQuery = function ($conditional, val) {
  * ignore
  */
 
-function defaultId () {
+function defaultId() {
   return new oid();
 }
 
-function resetId (v) {
+function resetId(v) {
   this.$__._id = null;
   return v;
 }
@@ -6527,18 +6960,59 @@ function resetId (v) {
 module.exports = ObjectId;
 
 }).call(this,require("buffer").Buffer)
-},{"../schematype":35,"../types/objectid":42,"../utils":43,"./../document":5,"buffer":47}],34:[function(require,module,exports){
+},{"../schematype":38,"../types/objectid":45,"../utils":47,"./../document":5,"buffer":51}],36:[function(require,module,exports){
+(function (Buffer){
+/*!
+ * Module requirements.
+ */
+
+var CastError = require('../../error/cast');
+
+/*!
+ * ignore
+ */
+
+function handleBitwiseOperator(val) {
+  var _this = this;
+  if (Array.isArray(val)) {
+    return val.map(function(v) {
+      return _castNumber(_this, v);
+    });
+  } else if (Buffer.isBuffer(val)) {
+    return val;
+  } else {
+    // Assume trying to cast to number
+    return _castNumber(_this, val);
+  }
+}
+
+/*!
+ * ignore
+ */
+
+function _castNumber(_this, num) {
+  var v = Number(num);
+  if (isNaN(v)) {
+    throw new CastError('number', num, _this.path);
+  }
+  return v;
+}
+
+module.exports = handleBitwiseOperator;
+
+}).call(this,require("buffer").Buffer)
+},{"../../error/cast":13,"buffer":51}],37:[function(require,module,exports){
 (function (Buffer){
 
 /*!
  * Module dependencies.
  */
 
-var SchemaType = require('../schematype')
-  , CastError = SchemaType.CastError
-  , errorMessages = require('../error').messages
-  , utils = require('../utils')
-  , Document;
+var SchemaType = require('../schematype');
+var CastError = SchemaType.CastError;
+var errorMessages = require('../error').messages;
+var utils = require('../utils');
+var Document;
 
 /**
  * String SchemaType constructor.
@@ -6549,7 +7023,7 @@ var SchemaType = require('../schematype')
  * @api private
  */
 
-function SchemaString (key, options) {
+function SchemaString(key, options) {
   this.enumValues = [];
   this.regExp = null;
   SchemaType.call(this, key, options, 'String');
@@ -6604,7 +7078,7 @@ SchemaString.prototype.constructor = SchemaString;
  * @api public
  */
 
-SchemaString.prototype.enum = function () {
+SchemaString.prototype.enum = function() {
   if (this.enumValidator) {
     this.validators = this.validators.filter(function(v) {
       return v.validator != this.enumValidator;
@@ -6634,7 +7108,7 @@ SchemaString.prototype.enum = function () {
   }
 
   var vals = this.enumValues;
-  this.enumValidator = function (v) {
+  this.enumValidator = function(v) {
     return undefined === v || ~vals.indexOf(v);
   };
   this.validators.push({
@@ -6661,8 +7135,8 @@ SchemaString.prototype.enum = function () {
  * @return {SchemaType} this
  */
 
-SchemaString.prototype.lowercase = function () {
-  return this.set(function (v, self) {
+SchemaString.prototype.lowercase = function() {
+  return this.set(function(v, self) {
     if ('string' != typeof v) v = self.cast(v);
     if (v) return v.toLowerCase();
     return v;
@@ -6683,8 +7157,8 @@ SchemaString.prototype.lowercase = function () {
  * @return {SchemaType} this
  */
 
-SchemaString.prototype.uppercase = function () {
-  return this.set(function (v, self) {
+SchemaString.prototype.uppercase = function() {
+  return this.set(function(v, self) {
     if ('string' != typeof v) v = self.cast(v);
     if (v) return v.toUpperCase();
     return v;
@@ -6709,8 +7183,8 @@ SchemaString.prototype.uppercase = function () {
  * @return {SchemaType} this
  */
 
-SchemaString.prototype.trim = function () {
-  return this.set(function (v, self) {
+SchemaString.prototype.trim = function() {
+  return this.set(function(v, self) {
     if ('string' != typeof v) v = self.cast(v);
     if (v) return v.trim();
     return v;
@@ -6748,9 +7222,9 @@ SchemaString.prototype.trim = function () {
  * @api public
  */
 
-SchemaString.prototype.minlength = function (value, message) {
+SchemaString.prototype.minlength = function(value, message) {
   if (this.minlengthValidator) {
-    this.validators = this.validators.filter(function (v) {
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.minlengthValidator;
     }, this);
   }
@@ -6759,7 +7233,7 @@ SchemaString.prototype.minlength = function (value, message) {
     var msg = message || errorMessages.String.minlength;
     msg = msg.replace(/{MINLENGTH}/, value);
     this.validators.push({
-      validator: this.minlengthValidator = function (v) {
+      validator: this.minlengthValidator = function(v) {
         return v === null || v.length >= value;
       },
       message: msg,
@@ -6802,9 +7276,9 @@ SchemaString.prototype.minlength = function (value, message) {
  * @api public
  */
 
-SchemaString.prototype.maxlength = function (value, message) {
+SchemaString.prototype.maxlength = function(value, message) {
   if (this.maxlengthValidator) {
-    this.validators = this.validators.filter(function(v){
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.maxlengthValidator;
     }, this);
   }
@@ -6863,7 +7337,7 @@ SchemaString.prototype.maxlength = function (value, message) {
  * @api public
  */
 
-SchemaString.prototype.match = function match (regExp, message) {
+SchemaString.prototype.match = function match(regExp, message) {
   // yes, we allow multiple match validators
 
   var msg = message || errorMessages.String.match;
@@ -6895,7 +7369,7 @@ SchemaString.prototype.match = function match (regExp, message) {
  * @api private
  */
 
-SchemaString.prototype.checkRequired = function checkRequired (value, doc) {
+SchemaString.prototype.checkRequired = function checkRequired(value, doc) {
   if (SchemaType._isRef(this, value, doc, true)) {
     return null != value;
   } else {
@@ -6909,7 +7383,7 @@ SchemaString.prototype.checkRequired = function checkRequired (value, doc) {
  * @api private
  */
 
-SchemaString.prototype.cast = function (value, doc, init) {
+SchemaString.prototype.cast = function(value, doc, init) {
   if (SchemaType._isRef(this, value, doc, init)) {
     // wait! we may need to cast this to a document
 
@@ -6969,16 +7443,16 @@ SchemaString.prototype.cast = function (value, doc, init) {
  * ignore
  */
 
-function handleSingle (val) {
+function handleSingle(val) {
   return this.castForQuery(val);
 }
 
-function handleArray (val) {
+function handleArray(val) {
   var self = this;
   if (!Array.isArray(val)) {
     return [this.castForQuery(val)];
   }
-  return val.map(function (m) {
+  return val.map(function(m) {
     return self.castForQuery(m);
   });
 }
@@ -6988,11 +7462,8 @@ SchemaString.prototype.$conditionalHandlers =
     '$all': handleArray,
     '$gt' : handleSingle,
     '$gte': handleSingle,
-    '$in' : handleArray,
     '$lt' : handleSingle,
     '$lte': handleSingle,
-    '$ne' : handleSingle,
-    '$nin': handleArray,
     '$options': handleSingle,
     '$regex': handleSingle
   });
@@ -7005,7 +7476,7 @@ SchemaString.prototype.$conditionalHandlers =
  * @api private
  */
 
-SchemaString.prototype.castForQuery = function ($conditional, val) {
+SchemaString.prototype.castForQuery = function($conditional, val) {
   var handler;
   if (arguments.length === 2) {
     handler = this.$conditionalHandlers[$conditional];
@@ -7014,7 +7485,9 @@ SchemaString.prototype.castForQuery = function ($conditional, val) {
     return handler.call(this, val);
   } else {
     val = $conditional;
-    if (val instanceof RegExp) return val;
+    if (Object.prototype.toString.call(val) === '[object RegExp]') {
+      return val;
+    }
     return this.cast(val);
   }
 };
@@ -7026,7 +7499,7 @@ SchemaString.prototype.castForQuery = function ($conditional, val) {
 module.exports = SchemaString;
 
 }).call(this,require("buffer").Buffer)
-},{"../error":12,"../schematype":35,"../utils":43,"./../document":5,"buffer":47}],35:[function(require,module,exports){
+},{"../error":12,"../schematype":38,"../utils":47,"./../document":5,"buffer":51}],38:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module dependencies.
@@ -7047,7 +7520,7 @@ var ValidatorError = error.ValidatorError;
  * @api public
  */
 
-function SchemaType (path, options, instance) {
+function SchemaType(path, options, instance) {
   this.path = path;
   this.instance = instance;
   this.validators = [];
@@ -7114,7 +7587,7 @@ function SchemaType (path, options, instance) {
  * @api public
  */
 
-SchemaType.prototype.default = function (val) {
+SchemaType.prototype.default = function(val) {
   if (1 === arguments.length) {
     this.defaultValue = typeof val === 'function'
       ? val
@@ -7151,7 +7624,7 @@ SchemaType.prototype.default = function (val) {
  * @api public
  */
 
-SchemaType.prototype.index = function (options) {
+SchemaType.prototype.index = function(options) {
   this._index = options;
   utils.expires(this._index);
   return this;
@@ -7172,7 +7645,7 @@ SchemaType.prototype.index = function (options) {
  * @api public
  */
 
-SchemaType.prototype.unique = function (bool) {
+SchemaType.prototype.unique = function(bool) {
   if (null == this._index || 'boolean' == typeof this._index) {
     this._index = {};
   } else if ('string' == typeof this._index) {
@@ -7219,7 +7692,7 @@ SchemaType.prototype.text = function(bool) {
  * @api public
  */
 
-SchemaType.prototype.sparse = function (bool) {
+SchemaType.prototype.sparse = function(bool) {
   if (null == this._index || 'boolean' == typeof this._index) {
     this._index = {};
   } else if ('string' == typeof this._index) {
@@ -7303,7 +7776,7 @@ SchemaType.prototype.sparse = function (bool) {
  * @api public
  */
 
-SchemaType.prototype.set = function (fn) {
+SchemaType.prototype.set = function(fn) {
   if ('function' != typeof fn)
     throw new TypeError('A setter must be a function.');
   this.setters.push(fn);
@@ -7372,7 +7845,7 @@ SchemaType.prototype.set = function (fn) {
  * @api public
  */
 
-SchemaType.prototype.get = function (fn) {
+SchemaType.prototype.get = function(fn) {
   if ('function' != typeof fn)
     throw new TypeError('A getter must be a function.');
   this.getters.push(fn);
@@ -7425,8 +7898,17 @@ SchemaType.prototype.get = function (fn) {
  *         ...
  *         respond(false); // validation failed
  *       })
-*      }, '{PATH} failed validation.');
-*
+ *     }, '{PATH} failed validation.');
+ *
+ *     // or with dynamic message
+ *
+ *     schema.path('name').validate(function (value, respond) {
+ *       doStuff(value, function () {
+ *         ...
+ *         respond(false, 'this message gets to the validation error');
+ *       });
+ *     }, 'this message does not matter');
+ *
  * You might use asynchronous validators to retreive other documents from the database to validate against or to meet other I/O bound validation needs.
  *
  * Validation occurs `pre('save')` or whenever you manually execute [document#validate](#document_Document-validate).
@@ -7452,7 +7934,7 @@ SchemaType.prototype.get = function (fn) {
  * @api public
  */
 
-SchemaType.prototype.validate = function (obj, message, type) {
+SchemaType.prototype.validate = function(obj, message, type) {
   if ('function' == typeof obj || obj && 'RegExp' === utils.getFunctionName(obj.constructor)) {
     var properties;
     if (message instanceof Object && !type) {
@@ -7471,11 +7953,11 @@ SchemaType.prototype.validate = function (obj, message, type) {
     return this;
   }
 
-  var i
-    , length
-    , arg;
+  var i,
+      length,
+      arg;
 
-  for (i=0, length=arguments.length; i<length; i++) {
+  for (i = 0, length = arguments.length; i < length; i++) {
     arg = arguments[i];
     if (!(arg && 'Object' === utils.getFunctionName(arg.constructor))) {
       var msg = 'Invalid validator. Received (' + typeof arg + ') '
@@ -7518,9 +8000,9 @@ SchemaType.prototype.validate = function (obj, message, type) {
  * @api public
  */
 
-SchemaType.prototype.required = function (required, message) {
+SchemaType.prototype.required = function(required, message) {
   if (false === required) {
-    this.validators = this.validators.filter(function (v) {
+    this.validators = this.validators.filter(function(v) {
       return v.validator != this.requiredValidator;
     }, this);
 
@@ -7531,7 +8013,7 @@ SchemaType.prototype.required = function (required, message) {
   var self = this;
   this.isRequired = true;
 
-  this.requiredValidator = function (v) {
+  this.requiredValidator = function(v) {
     // in here, `this` refers to the validating document.
     // no validation when this path wasn't selected in the query.
     if ('isSelected' in this &&
@@ -7565,7 +8047,7 @@ SchemaType.prototype.required = function (required, message) {
  * @api private
  */
 
-SchemaType.prototype.getDefault = function (scope, init) {
+SchemaType.prototype.getDefault = function(scope, init) {
   var ret = 'function' === typeof this.defaultValue
     ? this.defaultValue.call(scope)
     : this.defaultValue;
@@ -7586,11 +8068,11 @@ SchemaType.prototype.getDefault = function (scope, init) {
  * @api private
  */
 
-SchemaType.prototype.applySetters = function (value, scope, init, priorVal) {
-  var v = value
-    , setters = this.setters
-    , len = setters.length
-    , caster = this.caster;
+SchemaType.prototype.applySetters = function(value, scope, init, priorVal) {
+  var v = value,
+      setters = this.setters,
+      len = setters.length,
+      caster = this.caster;
 
   while (len--) {
     v = setters[len].call(scope, v, this);
@@ -7620,10 +8102,10 @@ SchemaType.prototype.applySetters = function (value, scope, init, priorVal) {
  * @api private
  */
 
-SchemaType.prototype.applyGetters = function (value, scope) {
-  var v = value
-    , getters = this.getters
-    , len = getters.length;
+SchemaType.prototype.applyGetters = function(value, scope) {
+  var v = value,
+      getters = this.getters,
+      len = getters.length;
 
   if (!len) {
     return v;
@@ -7653,8 +8135,8 @@ SchemaType.prototype.applyGetters = function (value, scope) {
  * @api public
  */
 
-SchemaType.prototype.select = function select (val) {
-  this.selected = !! val;
+SchemaType.prototype.select = function select(val) {
+  this.selected = !!val;
   return this;
 };
 
@@ -7667,10 +8149,10 @@ SchemaType.prototype.select = function select (val) {
  * @api private
  */
 
-SchemaType.prototype.doValidate = function (value, fn, scope) {
-  var err = false
-    , path = this.path
-    , count = this.validators.length;
+SchemaType.prototype.doValidate = function(value, fn, scope) {
+  var err = false,
+      path = this.path,
+      count = this.validators.length;
 
   if (!count) return fn(null);
 
@@ -7685,7 +8167,7 @@ SchemaType.prototype.doValidate = function (value, fn, scope) {
   };
 
   var self = this;
-  this.validators.forEach(function (v) {
+  this.validators.forEach(function(v) {
     if (err) {
       return;
     }
@@ -7704,7 +8186,10 @@ SchemaType.prototype.doValidate = function (value, fn, scope) {
         return;
       }
       if (2 === validator.length) {
-        validator.call(scope, value, function (ok) {
+        validator.call(scope, value, function(ok, customMsg) {
+          if (customMsg) {
+            validatorProperties.message = customMsg;
+          }
           validate(ok, validatorProperties);
         });
       } else {
@@ -7727,10 +8212,10 @@ SchemaType.prototype.doValidate = function (value, fn, scope) {
  * @api private
  */
 
-SchemaType.prototype.doValidateSync = function (value, scope) {
-  var err = null
-    , path = this.path
-    , count = this.validators.length;
+SchemaType.prototype.doValidateSync = function(value, scope) {
+  var err = null,
+      path = this.path,
+      count = this.validators.length;
 
   if (!count) return null;
 
@@ -7746,7 +8231,7 @@ SchemaType.prototype.doValidateSync = function (value, scope) {
     return null;
   }
 
-  this.validators.forEach(function (v) {
+  this.validators.forEach(function(v) {
     if (err) {
       return;
     }
@@ -7780,7 +8265,7 @@ SchemaType.prototype.doValidateSync = function (value, scope) {
  * @api private
  */
 
-SchemaType._isRef = function (self, value, doc, init) {
+SchemaType._isRef = function(self, value, doc, init) {
   // fast path
   var ref = init && self.options && self.options.ref;
 
@@ -7811,12 +8296,55 @@ SchemaType._isRef = function (self, value, doc, init) {
  */
 
 function handleSingle(val) {
-  return this.cast(val);
+  return this.castForQuery(val);
 }
 
-// Default conditional handlers for all schema types
+/*!
+ * ignore
+ */
+
+function handleArray(val) {
+  var _this = this;
+  if (!Array.isArray(val)) {
+    return [this.castForQuery(val)];
+  }
+  return val.map(function(m) {
+    return _this.castForQuery(m);
+  });
+}
+
+/*!
+ * ignore
+ */
+
 SchemaType.prototype.$conditionalHandlers = {
-  '$eq': handleSingle
+  '$all': handleArray,
+  '$eq': handleSingle,
+  '$in' : handleArray,
+  '$ne' : handleSingle,
+  '$nin': handleArray
+};
+
+/**
+ * Cast the given value with the given optional query operator.
+ *
+ * @param {String} [$conditional] query operator, like `$eq` or `$in`
+ * @param {any} val
+ * @api private
+ */
+
+SchemaType.prototype.castForQuery = function($conditional, val) {
+  var handler;
+  if (arguments.length === 2) {
+    handler = this.$conditionalHandlers[$conditional];
+    if (!handler) {
+      throw new Error('Can\'t use ' + $conditional);
+    }
+    return handler.call(this, val);
+  } else {
+    val = $conditional;
+    return this.cast(val);
+  }
 };
 
 /*!
@@ -7830,7 +8358,7 @@ exports.CastError = CastError;
 exports.ValidatorError = ValidatorError;
 
 }).call(this,require("buffer").Buffer)
-},{"./error":12,"./utils":43,"buffer":47}],36:[function(require,module,exports){
+},{"./error":12,"./utils":47,"buffer":51}],39:[function(require,module,exports){
 
 /*!
  * Module dependencies.
@@ -7845,7 +8373,7 @@ var utils = require('./utils');
  * @api private
  */
 
-var StateMachine = module.exports = exports = function StateMachine () {
+var StateMachine = module.exports = exports = function StateMachine() {
 };
 
 /*!
@@ -7862,17 +8390,17 @@ var StateMachine = module.exports = exports = function StateMachine () {
  * @private
  */
 
-StateMachine.ctor = function () {
+StateMachine.ctor = function() {
   var states = utils.args(arguments);
 
-  var ctor = function () {
+  var ctor = function() {
     StateMachine.apply(this, arguments);
     this.paths = {};
     this.states = {};
     this.stateNames = states;
 
-    var i = states.length
-      , state;
+    var i = states.length,
+        state;
 
     while (i--) {
       state = states[i];
@@ -7882,9 +8410,9 @@ StateMachine.ctor = function () {
 
   ctor.prototype = new StateMachine();
 
-  states.forEach(function (state) {
+  states.forEach(function(state) {
     // Changes the `path`'s state to `state`.
-    ctor.prototype[state] = function (path) {
+    ctor.prototype[state] = function(path) {
       this._changeState(path, state);
     };
   });
@@ -7902,7 +8430,7 @@ StateMachine.ctor = function () {
  * @api private
  */
 
-StateMachine.prototype._changeState = function _changeState (path, nextState) {
+StateMachine.prototype._changeState = function _changeState(path, nextState) {
   var prevBucket = this.states[this.paths[path]];
   if (prevBucket) delete prevBucket[path];
 
@@ -7914,10 +8442,10 @@ StateMachine.prototype._changeState = function _changeState (path, nextState) {
  * ignore
  */
 
-StateMachine.prototype.clear = function clear (state) {
-  var keys = Object.keys(this.states[state])
-    , i = keys.length
-    , path;
+StateMachine.prototype.clear = function clear(state) {
+  var keys = Object.keys(this.states[state]),
+      i = keys.length,
+      path;
 
   while (i--) {
     path = keys[i];
@@ -7934,10 +8462,10 @@ StateMachine.prototype.clear = function clear (state) {
  * @private
  */
 
-StateMachine.prototype.some = function some () {
+StateMachine.prototype.some = function some() {
   var self = this;
   var what = arguments.length ? arguments : this.stateNames;
-  return Array.prototype.some.call(what, function (state) {
+  return Array.prototype.some.call(what, function(state) {
     return Object.keys(self.states[state]).length;
   });
 };
@@ -7951,21 +8479,21 @@ StateMachine.prototype.some = function some () {
  * @api private
  */
 
-StateMachine.prototype._iter = function _iter (iterMethod) {
-  return function () {
-    var numArgs = arguments.length
-      , states = utils.args(arguments, 0, numArgs-1)
-      , callback = arguments[numArgs-1];
+StateMachine.prototype._iter = function _iter(iterMethod) {
+  return function() {
+    var numArgs = arguments.length,
+        states = utils.args(arguments, 0, numArgs - 1),
+        callback = arguments[numArgs - 1];
 
     if (!states.length) states = this.stateNames;
 
     var self = this;
 
-    var paths = states.reduce(function (paths, state) {
+    var paths = states.reduce(function(paths, state) {
       return paths.concat(Object.keys(self.states[state]));
     }, []);
 
-    return paths[iterMethod](function (path, i, paths) {
+    return paths[iterMethod](function(path, i, paths) {
       return callback(path, i, paths);
     });
   };
@@ -7985,7 +8513,7 @@ StateMachine.prototype._iter = function _iter (iterMethod) {
  * @private
  */
 
-StateMachine.prototype.forEach = function forEach () {
+StateMachine.prototype.forEach = function forEach() {
   this.forEach = this._iter('forEach');
   return this.forEach.apply(this, arguments);
 };
@@ -8005,12 +8533,12 @@ StateMachine.prototype.forEach = function forEach () {
  * @private
  */
 
-StateMachine.prototype.map = function map () {
+StateMachine.prototype.map = function map() {
   this.map = this._iter('map');
   return this.map.apply(this, arguments);
 };
 
-},{"./utils":43}],37:[function(require,module,exports){
+},{"./utils":47}],40:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module dependencies.
@@ -8037,11 +8565,18 @@ var isMongooseObject = utils.isMongooseObject;
  * @see http://bit.ly/f6CnZU
  */
 
-function MongooseArray (values, path, doc) {
+function MongooseArray(values, path, doc) {
   var arr = [].concat(values);
 
   utils.decorate( arr, MongooseArray.mixin );
   arr.isMongooseArray = true;
+
+  var _options = { enumerable: false, configurable: true, writable: true };
+  var keys = Object.keys(MongooseArray.mixin).
+    concat(['isMongooseArray', 'validators', '_path']);
+  for (var i = 0; i < keys.length; ++i) {
+    Object.defineProperty(arr, keys[i], _options);
+  }
 
   arr._atomics = {};
   arr.validators = [];
@@ -8090,7 +8625,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  _cast: function (value) {
+  _cast: function(value) {
     var owner = this._owner;
     var populated = false;
     var Model;
@@ -8143,9 +8678,9 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  _markModified: function (elem, embeddedPath) {
-    var parent = this._parent
-      , dirtyPath;
+  _markModified: function(elem, embeddedPath) {
+    var parent = this._parent,
+        dirtyPath;
 
     if (parent) {
       dirtyPath = this._path;
@@ -8159,6 +8694,7 @@ MongooseArray.mixin = {
           dirtyPath = dirtyPath + '.' + elem;
         }
       }
+
       parent.markModified(dirtyPath);
     }
 
@@ -8175,7 +8711,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  _registerAtomic: function (op, val) {
+  _registerAtomic: function(op, val) {
     if ('$set' == op) {
       // $set takes precedence over all other ops.
       // mark entire array modified.
@@ -8188,7 +8724,7 @@ MongooseArray.mixin = {
     // reset pop/shift after save
     if ('$pop' == op && !('$pop' in atomics)) {
       var self = this;
-      this._parent.once('save', function () {
+      this._parent.once('save', function() {
         self._popped = self._shifted = null;
       });
     }
@@ -8203,13 +8739,22 @@ MongooseArray.mixin = {
       return this;
     }
 
+    var selector;
+
     if (op === '$pullAll' || op === '$pushAll' || op === '$addToSet') {
       atomics[op] || (atomics[op] = []);
       atomics[op] = atomics[op].concat(val);
     } else if (op === '$pullDocs') {
-      var pullOp = atomics['$pull'] || (atomics['$pull'] = {})
-        , selector = pullOp['_id'] || (pullOp['_id'] = {'$in' : [] });
-      selector['$in'] = selector['$in'].concat(val);
+      var pullOp = atomics['$pull'] || (atomics['$pull'] = {});
+      if (val[0] instanceof EmbeddedDocument) {
+        selector = pullOp['$or'] || (pullOp['$or'] = []);
+        Array.prototype.push.apply(selector, val.map(function(v) {
+          return v.toObject({ virtuals: false });
+        }));
+      } else {
+        selector = pullOp['_id'] || (pullOp['_id'] = {'$in' : [] });
+        selector['$in'] = selector['$in'].concat(val);
+      }
     } else {
       atomics[op] = val;
     }
@@ -8228,7 +8773,7 @@ MongooseArray.mixin = {
    * @api private
    */
 
-  $__getAtomics: function () {
+  $__getAtomics: function() {
     var ret = [];
     var keys = Object.keys(this._atomics);
     var i = keys.length;
@@ -8272,7 +8817,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  hasAtomics: function hasAtomics () {
+  hasAtomics: function hasAtomics() {
     if (!(this._atomics && 'Object' === this._atomics.constructor.name)) {
       return 0;
     }
@@ -8301,7 +8846,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  push: function () {
+  push: function() {
     var values = [].map.call(arguments, this._mapCast, this);
     values = this._schema.applySetters(values, this._parent);
     var ret = [].push.apply(this, values);
@@ -8326,7 +8871,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  nonAtomicPush: function () {
+  nonAtomicPush: function() {
     var values = [].map.call(arguments, this._mapCast, this);
     var ret = [].push.apply(this, values);
     this._registerAtomic('$set', this);
@@ -8369,7 +8914,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  $pop: function () {
+  $pop: function() {
     this._registerAtomic('$pop', 1);
     this._markModified();
 
@@ -8393,7 +8938,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  pop: function () {
+  pop: function() {
     var ret = [].pop.call(this);
     this._registerAtomic('$set', this);
     this._markModified();
@@ -8433,7 +8978,7 @@ MongooseArray.mixin = {
    * @see mongodb http://www.mongodb.org/display/DOCS/Updating/#Updating-%24pop
    */
 
-  $shift: function $shift () {
+  $shift: function $shift() {
     this._registerAtomic('$pop', -1);
     this._markModified();
 
@@ -8463,7 +9008,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  shift: function () {
+  shift: function() {
     var ret = [].shift.call(this);
     this._registerAtomic('$set', this);
     this._markModified();
@@ -8471,7 +9016,9 @@ MongooseArray.mixin = {
   },
 
   /**
-   * Pulls items from the array atomically.
+   * Pulls items from the array atomically. Equality is determined by casting
+   * the provided value to an embedded document and comparing using
+   * [the `Document.equals()` function.](./api.html#document_Document-equals)
    *
    * ####Examples:
    *
@@ -8497,16 +9044,16 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  pull: function () {
-    var values = [].map.call(arguments, this._cast, this)
-      , cur = this._parent.get(this._path)
-      , i = cur.length
-      , mem;
+  pull: function() {
+    var values = [].map.call(arguments, this._cast, this),
+        cur = this._parent.get(this._path),
+        i = cur.length,
+        mem;
 
     while (i--) {
       mem = cur[i];
-      if (mem instanceof EmbeddedDocument) {
-        if (values.some(function (v) { return v.equals(mem); } )) {
+      if (mem instanceof Document) {
+        if (values.some(function(v) { return v.equals(mem); } )) {
           [].splice.call(cur, i, 1);
         }
       } else if (~cur.indexOf.call(values, mem)) {
@@ -8515,7 +9062,9 @@ MongooseArray.mixin = {
     }
 
     if (values[0] instanceof EmbeddedDocument) {
-      this._registerAtomic('$pullDocs', values.map( function (v) { return v._id; } ));
+      this._registerAtomic('$pullDocs', values.map(function(v) {
+        return v._id || v;
+      }));
     } else {
       this._registerAtomic('$pullAll', values);
     }
@@ -8536,7 +9085,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  splice: function splice () {
+  splice: function splice() {
     var ret, vals, i;
 
     if (arguments.length) {
@@ -8566,7 +9115,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  unshift: function () {
+  unshift: function() {
     var values = [].map.call(arguments, this._cast, this);
     values = this._schema.applySetters(values, this._parent);
     [].unshift.apply(this, values);
@@ -8587,7 +9136,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  sort: function () {
+  sort: function() {
     var ret = [].sort.apply(this, arguments);
     this._registerAtomic('$set', this);
     this._markModified();
@@ -8611,7 +9160,7 @@ MongooseArray.mixin = {
    * @method addToSet
    */
 
-  addToSet: function addToSet () {
+  addToSet: function addToSet() {
     var values = [].map.call(arguments, this._mapCast, this);
     values = this._schema.applySetters(values, this._parent);
     var added = [];
@@ -8619,15 +9168,15 @@ MongooseArray.mixin = {
                values[0] instanceof Date ? 'date' :
                '';
 
-    values.forEach(function (v) {
+    values.forEach(function(v) {
       var found;
       switch (type) {
         case 'doc':
-          found = this.some(function(doc){ return doc.equals(v); });
+          found = this.some(function(doc) { return doc.equals(v); });
           break;
         case 'date':
           var val = +v;
-          found = this.some(function(d){ return +d === val; });
+          found = this.some(function(d) { return +d === val; });
           break;
         default:
           found = ~this.indexOf(v);
@@ -8671,7 +9220,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  set: function set (i, val) {
+  set: function set(i, val) {
     var value = this._cast(val, i);
     value = this._schema.caster instanceof EmbeddedDocument ?
             value :
@@ -8692,9 +9241,9 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  toObject: function (options) {
+  toObject: function(options) {
     if (options && options.depopulate) {
-      return this.map(function (doc) {
+      return this.map(function(doc) {
         return doc instanceof Document
           ? doc.toObject(options)
           : doc;
@@ -8712,7 +9261,7 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  inspect: function () {
+  inspect: function() {
     return JSON.stringify(this);
   },
 
@@ -8726,11 +9275,12 @@ MongooseArray.mixin = {
    * @receiver MongooseArray
    */
 
-  indexOf: function indexOf (obj) {
+  indexOf: function indexOf(obj) {
     if (obj instanceof ObjectId) obj = obj.toString();
     for (var i = 0, len = this.length; i < len; ++i) {
-      if (obj == this[i])
+      if (obj == this[i]) {
         return i;
+      }
     }
     return -1;
   }
@@ -8755,14 +9305,14 @@ MongooseArray.mixin.remove = MongooseArray.mixin.pull;
 module.exports = exports = MongooseArray;
 
 }).call(this,require("buffer").Buffer)
-},{"../document":5,"../utils":43,"./embedded":40,"./objectid":42,"buffer":47}],38:[function(require,module,exports){
+},{"../document":5,"../utils":47,"./embedded":43,"./objectid":45,"buffer":51}],41:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module dependencies.
  */
 
-var Binary = require('../drivers').Binary
-  , utils = require('../utils');
+var Binary = require('../drivers').Binary,
+    utils = require('../utils');
 
 /**
  * Mongoose Buffer constructor.
@@ -8777,7 +9327,7 @@ var Binary = require('../drivers').Binary
  * @see http://bit.ly/f6CnZU
  */
 
-function MongooseBuffer (value, encode, offset) {
+function MongooseBuffer(value, encode, offset) {
   var length = arguments.length;
   var val;
 
@@ -8805,14 +9355,14 @@ function MongooseBuffer (value, encode, offset) {
 
   // make sure these internal props don't show up in Object.keys()
   Object.defineProperties(buf, {
-      validators: { value: [] }
-    , _path: { value: path }
-    , _parent: { value: doc }
+    validators: { value: [] },
+    _path: { value: path },
+    _parent: { value: doc }
   });
 
   if (doc && "string" === typeof path) {
     Object.defineProperty(buf, '_schema', {
-        value: doc.schema.path(path)
+      value: doc.schema.path(path)
     });
   }
 
@@ -8856,7 +9406,7 @@ MongooseBuffer.mixin = {
    * @receiver MongooseBuffer
    */
 
-  _markModified: function () {
+  _markModified: function() {
     var parent = this._parent;
 
     if (parent) {
@@ -8873,7 +9423,7 @@ MongooseBuffer.mixin = {
    * @receiver MongooseBuffer
    */
 
-  write: function () {
+  write: function() {
     var written = Buffer.prototype.write.apply(this, arguments);
 
     if (written > 0) {
@@ -8896,7 +9446,7 @@ MongooseBuffer.mixin = {
    * @receiver MongooseBuffer
    */
 
-  copy: function (target) {
+  copy: function(target) {
     var ret = Buffer.prototype.copy.apply(this, arguments);
 
     if (target && target.isMongooseBuffer) {
@@ -8921,10 +9471,10 @@ MongooseBuffer.mixin = {
 'writeUInt16LE writeUInt16BE writeUInt32LE writeUInt32BE ' +
 'writeInt16LE writeInt16BE writeInt32LE writeInt32BE ' +
 'writeFloatLE writeFloatBE writeDoubleLE writeDoubleBE'
-).split(' ').forEach(function (method) {
+).split(' ').forEach(function(method) {
   if (!Buffer.prototype[method]) return;
   MongooseBuffer.mixin[method] = new Function(
-    'var ret = Buffer.prototype.'+method+'.apply(this, arguments);' +
+    'var ret = Buffer.prototype.' + method + '.apply(this, arguments);' +
     'this._markModified();' +
     'return ret;'
   );
@@ -8953,7 +9503,7 @@ MongooseBuffer.mixin = {
  * @receiver MongooseBuffer
  */
 
-MongooseBuffer.mixin.toObject = function (options) {
+MongooseBuffer.mixin.toObject = function(options) {
   var subtype = 'number' == typeof options
     ? options
     : (this._subtype || 0);
@@ -8969,7 +9519,7 @@ MongooseBuffer.mixin.toObject = function (options) {
  * @receiver MongooseBuffer
  */
 
-MongooseBuffer.mixin.equals = function (other) {
+MongooseBuffer.mixin.equals = function(other) {
   if (!Buffer.isBuffer(other)) {
     return false;
   }
@@ -9007,7 +9557,7 @@ MongooseBuffer.mixin.equals = function (other) {
  * @receiver MongooseBuffer
  */
 
-MongooseBuffer.mixin.subtype = function (subtype) {
+MongooseBuffer.mixin.subtype = function(subtype) {
   if ('number' != typeof subtype) {
     throw new TypeError('Invalid subtype. Expected a number');
   }
@@ -9028,18 +9578,18 @@ MongooseBuffer.Binary = Binary;
 module.exports = MongooseBuffer;
 
 }).call(this,require("buffer").Buffer)
-},{"../drivers":11,"../utils":43,"buffer":47}],39:[function(require,module,exports){
+},{"../drivers":11,"../utils":47,"buffer":51}],42:[function(require,module,exports){
 (function (Buffer){
 /*!
  * Module dependencies.
  */
 
-var MongooseArray = require('./array')
-  , ObjectId = require('./objectid')
-  , ObjectIdSchema = require('../schema/objectid')
-  , utils = require('../utils')
-  , util = require('util')
-  , Document = require('../document');
+var MongooseArray = require('./array'),
+    ObjectId = require('./objectid'),
+    ObjectIdSchema = require('../schema/objectid'),
+    utils = require('../utils'),
+    util = require('util'),
+    Document = require('../document');
 
 /**
  * DocumentArray constructor
@@ -9053,7 +9603,7 @@ var MongooseArray = require('./array')
  * @see http://bit.ly/f6CnZU
  */
 
-function MongooseDocumentArray (values, path, doc) {
+function MongooseDocumentArray(values, path, doc) {
   var arr = [].concat(values);
 
   // Values always have to be passed to the constructor to initialize, since
@@ -9098,7 +9648,7 @@ MongooseDocumentArray.mixin = Object.create( MongooseArray.mixin );
  * @receiver MongooseDocumentArray
  */
 
-MongooseDocumentArray.mixin._cast = function (value, index) {
+MongooseDocumentArray.mixin._cast = function(value, index) {
   if (value instanceof this._schema.casterConstructor) {
     if (!(value.__parent && value.__parentArray)) {
       // value may have been created using array.create()
@@ -9134,10 +9684,10 @@ MongooseDocumentArray.mixin._cast = function (value, index) {
  * @receiver MongooseDocumentArray
  */
 
-MongooseDocumentArray.mixin.id = function (id) {
-  var casted
-    , sid
-    , _id;
+MongooseDocumentArray.mixin.id = function(id) {
+  var casted,
+      sid,
+      _id;
 
   try {
     var casted_ = ObjectIdSchema.prototype.cast.call({}, id);
@@ -9178,8 +9728,8 @@ MongooseDocumentArray.mixin.id = function (id) {
  * @receiver MongooseDocumentArray
  */
 
-MongooseDocumentArray.mixin.toObject = function (options) {
-  return this.map(function (doc) {
+MongooseDocumentArray.mixin.toObject = function(options) {
+  return this.map(function(doc) {
     return doc && doc.toObject(options) || null;
   });
 };
@@ -9192,8 +9742,8 @@ MongooseDocumentArray.mixin.toObject = function (options) {
  * @receiver MongooseDocumentArray
  */
 
-MongooseDocumentArray.mixin.inspect = function () {
-  return '[' + Array.prototype.map.call(this, function (doc) {
+MongooseDocumentArray.mixin.inspect = function() {
+  return '[' + Array.prototype.map.call(this, function(doc) {
     if (doc) {
       return doc.inspect
         ? doc.inspect()
@@ -9214,7 +9764,7 @@ MongooseDocumentArray.mixin.inspect = function () {
  * @receiver MongooseDocumentArray
  */
 
-MongooseDocumentArray.mixin.create = function (obj) {
+MongooseDocumentArray.mixin.create = function(obj) {
   return new this._schema.casterConstructor(obj);
 };
 
@@ -9228,13 +9778,13 @@ MongooseDocumentArray.mixin.create = function (obj) {
  * @receiver MongooseDocumentArray
  */
 
-MongooseDocumentArray.mixin.notify = function notify (event) {
+MongooseDocumentArray.mixin.notify = function notify(event) {
   var self = this;
-  return function notify (val) {
+  return function notify(val) {
     var i = self.length;
     while (i--) {
       if (!self[i]) continue;
-      switch(event) {
+      switch (event) {
         // only swap for save event for now, we may change this to all event types later
         case 'save':
           val = self[i];
@@ -9255,7 +9805,7 @@ MongooseDocumentArray.mixin.notify = function notify (event) {
 module.exports = MongooseDocumentArray;
 
 }).call(this,require("buffer").Buffer)
-},{"../document":5,"../schema/objectid":33,"../utils":43,"./array":37,"./objectid":42,"buffer":47,"util":55}],40:[function(require,module,exports){
+},{"../document":5,"../schema/objectid":35,"../utils":47,"./array":40,"./objectid":45,"buffer":51,"util":59}],43:[function(require,module,exports){
 /* eslint no-func-assign: 1 */
 
 /*!
@@ -9264,7 +9814,7 @@ module.exports = MongooseDocumentArray;
 
 var Document = require('../document_provider')();
 var inspect = require('util').inspect;
-var Promise = require('../promise');
+var PromiseProvider = require('../promise_provider');
 
 /**
  * EmbeddedDocument constructor.
@@ -9276,7 +9826,7 @@ var Promise = require('../promise');
  * @api private
  */
 
-function EmbeddedDocument (obj, parentArr, skipId, fields, index) {
+function EmbeddedDocument(obj, parentArr, skipId, fields, index) {
   if (parentArr) {
     this.__parentArray = parentArr;
     this.__parent = parentArr._parent;
@@ -9289,7 +9839,7 @@ function EmbeddedDocument (obj, parentArr, skipId, fields, index) {
   Document.call(this, obj, fields, skipId);
 
   var self = this;
-  this.on('isNew', function (val) {
+  this.on('isNew', function(val) {
     self.isNew = val;
   });
 }
@@ -9314,10 +9864,10 @@ EmbeddedDocument.prototype.constructor = EmbeddedDocument;
  * @receiver EmbeddedDocument
  */
 
-EmbeddedDocument.prototype.markModified = function (path) {
+EmbeddedDocument.prototype.markModified = function(path) {
+  this.$__.activePaths.modify(path);
   if (!this.__parentArray) return;
 
-  this.$__.activePaths.modify(path);
   if (this.isNew) {
     // Mark the WHOLE parent array as modified
     // if this is a new document (i.e., we are initializing
@@ -9340,7 +9890,8 @@ EmbeddedDocument.prototype.markModified = function (path) {
  * @api private
  */
 
-EmbeddedDocument.prototype.save = function (fn) {
+EmbeddedDocument.prototype.save = function(fn) {
+  var Promise = PromiseProvider.get();
   return new Promise.ES6(function(resolve) {
     fn && fn();
     resolve();
@@ -9354,7 +9905,7 @@ EmbeddedDocument.prototype.save = function (fn) {
  * @api public
  */
 
-EmbeddedDocument.prototype.remove = function (fn) {
+EmbeddedDocument.prototype.remove = function(fn) {
   if (!this.__parentArray) return this;
 
   var _id;
@@ -9383,13 +9934,13 @@ EmbeddedDocument.prototype.remove = function (fn) {
  * @api private
  */
 
-function registerRemoveListener (sub) {
+function registerRemoveListener(sub) {
   var owner = sub.ownerDocument();
 
   owner.on('save', emitRemove);
   owner.on('remove', emitRemove);
 
-  function emitRemove () {
+  function emitRemove() {
     owner.removeListener('save', emitRemove);
     owner.removeListener('remove', emitRemove);
     sub.emit('remove', sub);
@@ -9402,7 +9953,7 @@ function registerRemoveListener (sub) {
  * @api private
  */
 
-EmbeddedDocument.prototype.update = function () {
+EmbeddedDocument.prototype.update = function() {
   throw new Error('The #update method is not available on EmbeddedDocuments');
 };
 
@@ -9412,7 +9963,7 @@ EmbeddedDocument.prototype.update = function () {
  * @api public
  */
 
-EmbeddedDocument.prototype.inspect = function () {
+EmbeddedDocument.prototype.inspect = function() {
   return inspect(this.toObject());
 };
 
@@ -9425,7 +9976,7 @@ EmbeddedDocument.prototype.inspect = function () {
  * @api public
  */
 
-EmbeddedDocument.prototype.invalidate = function (path, err, val, first) {
+EmbeddedDocument.prototype.invalidate = function(path, err, val, first) {
   if (!this.__parent) {
     var msg = 'Unable to invalidate a subdocument that has not been added to an array.';
     throw new Error(msg);
@@ -9493,7 +10044,7 @@ EmbeddedDocument.prototype.$isValid = function(path) {
  * @return {Document}
  */
 
-EmbeddedDocument.prototype.ownerDocument = function () {
+EmbeddedDocument.prototype.ownerDocument = function() {
   if (this.$__.ownerDocument) {
     return this.$__.ownerDocument;
   }
@@ -9518,7 +10069,7 @@ EmbeddedDocument.prototype.ownerDocument = function () {
  * @memberOf EmbeddedDocument
  */
 
-EmbeddedDocument.prototype.$__fullPath = function (path) {
+EmbeddedDocument.prototype.$__fullPath = function(path) {
   if (!this.$__.fullPath) {
     var parent = this;
     if (!parent.__parent) return path;
@@ -9548,7 +10099,7 @@ EmbeddedDocument.prototype.$__fullPath = function (path) {
  * @api public
  */
 
-EmbeddedDocument.prototype.parent = function () {
+EmbeddedDocument.prototype.parent = function() {
   return this.__parent;
 };
 
@@ -9558,7 +10109,7 @@ EmbeddedDocument.prototype.parent = function () {
  * @api public
  */
 
-EmbeddedDocument.prototype.parentArray = function () {
+EmbeddedDocument.prototype.parentArray = function() {
   return this.__parentArray;
 };
 
@@ -9568,7 +10119,7 @@ EmbeddedDocument.prototype.parentArray = function () {
 
 module.exports = EmbeddedDocument;
 
-},{"../document_provider":6,"../promise":22,"util":55}],41:[function(require,module,exports){
+},{"../document_provider":6,"../promise_provider":24,"util":59}],44:[function(require,module,exports){
 
 /*!
  * Module exports.
@@ -9583,7 +10134,9 @@ exports.Embedded = require('./embedded');
 exports.DocumentArray = require('./documentarray');
 exports.ObjectId = require('./objectid');
 
-},{"./array":37,"./buffer":38,"./documentarray":39,"./embedded":40,"./objectid":42}],42:[function(require,module,exports){
+exports.Subdocument = require('./subdocument');
+
+},{"./array":40,"./buffer":41,"./documentarray":42,"./embedded":43,"./objectid":45,"./subdocument":46}],45:[function(require,module,exports){
 /**
  * ObjectId type constructor
  *
@@ -9598,7 +10151,96 @@ var ObjectId = require('../drivers').ObjectId;
 
 module.exports = ObjectId;
 
-},{"../drivers":11}],43:[function(require,module,exports){
+},{"../drivers":11}],46:[function(require,module,exports){
+var Document = require('../document');
+var PromiseProvider = require('../promise_provider');
+
+module.exports = Subdocument;
+
+/**
+ * Subdocument constructor.
+ *
+ * @inherits Document
+ * @api private
+ */
+
+function Subdocument() {
+  Document.apply(this, arguments);
+  this.$isSingleNested = true;
+}
+
+Subdocument.prototype = Object.create(Document.prototype);
+
+/**
+ * Used as a stub for [hooks.js](https://github.com/bnoguchi/hooks-js/tree/31ec571cef0332e21121ee7157e0cf9728572cc3)
+ *
+ * ####NOTE:
+ *
+ * _This is a no-op. Does not actually save the doc to the db._
+ *
+ * @param {Function} [fn]
+ * @return {Promise} resolved Promise
+ * @api private
+ */
+
+Subdocument.prototype.save = function(fn) {
+  var Promise = PromiseProvider.get();
+  return new Promise.ES6(function(resolve) {
+    fn && fn();
+    resolve();
+  });
+};
+
+Subdocument.prototype.$isValid = function(path) {
+  if (this.$parent) {
+    return this.$parent.$isValid([this.$basePath, path].join('.'));
+  }
+};
+
+Subdocument.prototype.markModified = function(path) {
+  if (this.$parent) {
+    this.$parent.markModified([this.$basePath, path].join('.'));
+  }
+};
+
+Subdocument.prototype.$markValid = function(path) {
+  if (this.$parent) {
+    this.$parent.$markValid([this.$basePath, path].join('.'));
+  }
+};
+
+Subdocument.prototype.invalidate = function(path, err, val) {
+  if (this.$parent) {
+    this.$parent.invalidate([this.$basePath, path].join('.'), err, val);
+  } else if (err.kind === 'cast' || err.name === 'CastError') {
+    throw err;
+  }
+};
+
+/**
+ * Returns the top level document of this sub-document.
+ *
+ * @return {Document}
+ */
+
+Subdocument.prototype.ownerDocument = function() {
+  if (this.$__.ownerDocument) {
+    return this.$__.ownerDocument;
+  }
+
+  var parent = this.$parent;
+  if (!parent) {
+    return this;
+  }
+
+  while (parent.$parent) {
+    parent = parent.$parent;
+  }
+
+  return this.$__.ownerDocument = parent;
+};
+
+},{"../document":5,"../promise_provider":24}],47:[function(require,module,exports){
 (function (process,Buffer){
 /*!
  * Module dependencies.
@@ -9621,7 +10263,7 @@ var Document;
  * @api private
  */
 
-exports.toCollectionName = function (name, options) {
+exports.toCollectionName = function(name, options) {
   options = options || {};
   if ('system.profile' === name) return name;
   if ('system.indexes' === name) return name;
@@ -9709,10 +10351,10 @@ var uncountables = exports.uncountables;
  * @api private
  */
 
-function pluralize (str) {
+function pluralize(str) {
   var found;
-  if (!~uncountables.indexOf(str.toLowerCase())){
-    found = rules.filter(function(rule){
+  if (!~uncountables.indexOf(str.toLowerCase())) {
+    found = rules.filter(function(rule) {
       return str.match(rule[0]);
     });
     if (found[0]) return str.replace(found[0][0], found[0][1]);
@@ -9731,7 +10373,7 @@ function pluralize (str) {
  * @api private
  */
 
-exports.deepEqual = function deepEqual (a, b) {
+exports.deepEqual = function deepEqual(a, b) {
   if (a === b) return true;
 
   if (a instanceof Date && b instanceof Date)
@@ -9814,7 +10456,7 @@ exports.deepEqual = function deepEqual (a, b) {
  * @api private
  */
 
-exports.clone = function clone (obj, options) {
+exports.clone = function clone(obj, options) {
   if (obj === undefined || obj === null)
     return obj;
 
@@ -9860,15 +10502,15 @@ var clone = exports.clone;
  * ignore
  */
 
-function cloneObject (obj, options) {
-  var retainKeyOrder = options && options.retainKeyOrder
-    , minimize = options && options.minimize
-    , ret = {}
-    , hasKeys
-    , keys
-    , val
-    , k
-    , i;
+function cloneObject(obj, options) {
+  var retainKeyOrder = options && options.retainKeyOrder,
+      minimize = options && options.minimize,
+      ret = {},
+      hasKeys,
+      keys,
+      val,
+      k,
+      i;
 
   if (retainKeyOrder) {
     for (k in obj) {
@@ -9901,7 +10543,7 @@ function cloneObject (obj, options) {
     : ret;
 }
 
-function cloneArray (arr, options) {
+function cloneArray(arr, options) {
   var ret = [];
   for (var i = 0, l = arr.length; i < l; i++)
     ret.push(clone(arr[i], options));
@@ -9917,10 +10559,10 @@ function cloneArray (arr, options) {
  * @api private
  */
 
-exports.options = function (defaults, options) {
-  var keys = Object.keys(defaults)
-    , i = keys.length
-    , k ;
+exports.options = function(defaults, options) {
+  var keys = Object.keys(defaults),
+      i = keys.length,
+      k;
 
   options = options || {};
 
@@ -9940,7 +10582,7 @@ exports.options = function (defaults, options) {
  * @api private
  */
 
-exports.random = function () {
+exports.random = function() {
   return Math.random().toString().substr(3);
 };
 
@@ -9952,10 +10594,10 @@ exports.random = function () {
  * @api private
  */
 
-exports.merge = function merge (to, from) {
-  var keys = Object.keys(from)
-    , i = keys.length
-    , key;
+exports.merge = function merge(to, from) {
+  var keys = Object.keys(from),
+      i = keys.length,
+      key;
 
   while (i--) {
     key = keys[i];
@@ -9981,7 +10623,7 @@ var toString = Object.prototype.toString;
  * @api private
  */
 
-exports.toObject = function toObject (obj) {
+exports.toObject = function toObject(obj) {
   var ret;
 
   if (exports.isNullOrUndefined(obj)) {
@@ -10024,7 +10666,10 @@ exports.toObject = function toObject (obj) {
  * @return {Boolean}
  */
 
-exports.isObject = function (arg) {
+exports.isObject = function(arg) {
+  if (Buffer.isBuffer(arg)) {
+    return true;
+  }
   return '[object Object]' == toString.call(arg);
 };
 
@@ -10046,15 +10691,15 @@ exports.args = sliced;
  * @api private
  */
 
-exports.tick = function tick (callback) {
+exports.tick = function tick(callback) {
   if ('function' !== typeof callback) return;
-  return function () {
+  return function() {
     try {
       callback.apply(this, arguments);
     } catch (err) {
       // only nextTick on err to get out of
       // the event loop and avoid state corruption.
-      process.nextTick(function () {
+      process.nextTick(function() {
         throw err;
       });
     }
@@ -10070,7 +10715,7 @@ exports.tick = function tick (callback) {
  * @api private
  */
 
-exports.isMongooseObject = function (v) {
+exports.isMongooseObject = function(v) {
   Document || (Document = require('./document'));
   MongooseArray || (MongooseArray = require('./types').Array);
   MongooseBuffer || (MongooseBuffer = require('./types').Buffer);
@@ -10088,7 +10733,7 @@ var isMongooseObject = exports.isMongooseObject;
  * @api private
  */
 
-exports.expires = function expires (object) {
+exports.expires = function expires(object) {
   if (!(object && 'Object' == object.constructor.name)) return;
   if (!('expires' in object)) return;
 
@@ -10106,7 +10751,7 @@ exports.expires = function expires (object) {
  * Populate options constructor
  */
 
-function PopulateOptions (path, select, match, options, model, subPopulate) {
+function PopulateOptions(path, select, match, options, model, subPopulate) {
   this.path = path;
   this.match = match;
   this.select = select;
@@ -10128,7 +10773,7 @@ exports.PopulateOptions = PopulateOptions;
  * populate helper
  */
 
-exports.populate = function populate (path, select, model, match, options, subPopulate) {
+exports.populate = function populate(path, select, model, match, options, subPopulate) {
   // The order of select/conditions args is opposite Model.find but
   // necessary to keep backward compatibility (select could be
   // an array, string, or object literal).
@@ -10140,7 +10785,7 @@ exports.populate = function populate (path, select, model, match, options, subPo
     }
 
     if (Array.isArray(path)) {
-      return path.map(function(o){
+      return path.map(function(o) {
         return exports.populate(o)[0];
       });
     }
@@ -10183,7 +10828,7 @@ exports.populate = function populate (path, select, model, match, options, subPo
  * @param {Object} obj
  */
 
-exports.getValue = function (path, obj, map) {
+exports.getValue = function(path, obj, map) {
   return mpath.get(path, obj, '_doc', map);
 };
 
@@ -10195,7 +10840,7 @@ exports.getValue = function (path, obj, map) {
  * @param {Object} obj
  */
 
-exports.setValue = function (path, val, obj, map) {
+exports.setValue = function(path, val, obj, map) {
   mpath.set(path, val, obj, '_doc', map);
 };
 
@@ -10208,10 +10853,10 @@ exports.setValue = function (path, val, obj, map) {
  */
 
 exports.object = {};
-exports.object.vals = function vals (o) {
-  var keys = Object.keys(o)
-    , i = keys.length
-    , ret = [];
+exports.object.vals = function vals(o) {
+  var keys = Object.keys(o),
+      i = keys.length,
+      ret = [];
 
   while (i--) {
     ret.push(o[keys[i]]);
@@ -10234,7 +10879,7 @@ exports.object.shallowCopy = exports.options;
  */
 
 var hop = Object.prototype.hasOwnProperty;
-exports.object.hasOwnProperty = function (obj, prop) {
+exports.object.hasOwnProperty = function(obj, prop) {
   return hop.call(obj, prop);
 };
 
@@ -10244,7 +10889,7 @@ exports.object.hasOwnProperty = function (obj, prop) {
  * @return {Boolean}
  */
 
-exports.isNullOrUndefined = function (val) {
+exports.isNullOrUndefined = function(val) {
   return null == val;
 };
 
@@ -10265,10 +10910,10 @@ exports.array = {};
  * @private
  */
 
-exports.array.flatten = function flatten (arr, filter, ret) {
+exports.array.flatten = function flatten(arr, filter, ret) {
   ret || (ret = []);
 
-  arr.forEach(function (item) {
+  arr.forEach(function(item) {
     if (Array.isArray(item)) {
       flatten(item, filter, ret);
     } else {
@@ -10327,7 +10972,7 @@ exports.array.unique = function(arr) {
  */
 
 exports.buffer = {};
-exports.buffer.areEqual = function (a, b) {
+exports.buffer.areEqual = function(a, b) {
   if (!Buffer.isBuffer(a)) return false;
   if (!Buffer.isBuffer(b)) return false;
   if (a.length !== b.length) return false;
@@ -10359,9 +11004,9 @@ exports.decorate = function(destination, source) {
  */
 
 exports.mergeClone = function(to, from) {
-  var keys = Object.keys(from)
-    , i = keys.length
-    , key;
+  var keys = Object.keys(from),
+      i = keys.length,
+      key;
 
   while (i--) {
     key = keys[i];
@@ -10396,7 +11041,7 @@ exports.each = function(arr, fn) {
 };
 
 }).call(this,require("FWaASH"),require("buffer").Buffer)
-},{"./document":5,"./types":41,"./types/objectid":42,"FWaASH":53,"buffer":47,"mpath":75,"ms":89,"regexp-clone":90,"sliced":91}],44:[function(require,module,exports){
+},{"./document":5,"./types":44,"./types/objectid":45,"FWaASH":57,"buffer":51,"mpath":80,"ms":93,"regexp-clone":94,"sliced":95}],48:[function(require,module,exports){
 
 /**
  * VirtualType constructor
@@ -10412,7 +11057,7 @@ exports.each = function(arr, fn) {
  * @api public
  */
 
-function VirtualType (options, name) {
+function VirtualType(options, name) {
   this.path = name;
   this.getters = [];
   this.setters = [];
@@ -10434,7 +11079,7 @@ function VirtualType (options, name) {
  * @api public
  */
 
-VirtualType.prototype.get = function (fn) {
+VirtualType.prototype.get = function(fn) {
   this.getters.push(fn);
   return this;
 };
@@ -10456,7 +11101,7 @@ VirtualType.prototype.get = function (fn) {
  * @api public
  */
 
-VirtualType.prototype.set = function (fn) {
+VirtualType.prototype.set = function(fn) {
   this.setters.push(fn);
   return this;
 };
@@ -10470,7 +11115,7 @@ VirtualType.prototype.set = function (fn) {
  * @api public
  */
 
-VirtualType.prototype.applyGetters = function (value, scope) {
+VirtualType.prototype.applyGetters = function(value, scope) {
   var v = value;
   for (var l = this.getters.length - 1; l >= 0; l--) {
     v = this.getters[l].call(scope, v, this);
@@ -10487,7 +11132,7 @@ VirtualType.prototype.applyGetters = function (value, scope) {
  * @api public
  */
 
-VirtualType.prototype.applySetters = function (value, scope) {
+VirtualType.prototype.applySetters = function(value, scope) {
   var v = value;
   for (var l = this.setters.length - 1; l >= 0; l--) {
     v = this.setters[l].call(scope, v, this);
@@ -10501,7 +11146,7 @@ VirtualType.prototype.applySetters = function (value, scope) {
 
 module.exports = VirtualType;
 
-},{}],45:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -11628,7 +12273,7 @@ module.exports = VirtualType;
 }());
 
 }).call(this,require("FWaASH"))
-},{"FWaASH":53}],46:[function(require,module,exports){
+},{"FWaASH":57}],50:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -11990,7 +12635,7 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":55}],47:[function(require,module,exports){
+},{"util/":59}],51:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -13044,7 +13689,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":48,"ieee754":49,"is-array":50}],48:[function(require,module,exports){
+},{"base64-js":52,"ieee754":53,"is-array":54}],52:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -13166,7 +13811,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],49:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -13252,7 +13897,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],50:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 
 /**
  * isArray
@@ -13287,7 +13932,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],51:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -13590,7 +14235,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],52:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -13615,7 +14260,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],53:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -13680,14 +14325,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],54:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],55:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -14277,7 +14922,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":54,"FWaASH":53,"inherits":52}],56:[function(require,module,exports){
+},{"./support/isBuffer":58,"FWaASH":57,"inherits":56}],60:[function(require,module,exports){
 /**
  * Module dependencies.
  * @ignore
@@ -14623,7 +15268,7 @@ Binary.SUBTYPE_USER_DEFINED = 128;
 module.exports = Binary;
 module.exports.Binary = Binary;
 
-},{"buffer":47}],57:[function(require,module,exports){
+},{"buffer":51}],61:[function(require,module,exports){
 (function (process){
 /**
  * Binary Parser.
@@ -15012,12 +15657,13 @@ BinaryParser.Buffer = BinaryParserBuffer;
 exports.BinaryParser = BinaryParser;
 
 }).call(this,require("FWaASH"))
-},{"FWaASH":53,"util":55}],58:[function(require,module,exports){
+},{"FWaASH":57,"util":59}],62:[function(require,module,exports){
 (function (Buffer){
 // "use strict"
 
 var writeIEEE754 = require('./float_parser').writeIEEE754,
 	readIEEE754 = require('./float_parser').readIEEE754,
+  Map = require('./map'),
 	Long = require('./long').Long,
   Double = require('./double').Double,
   Timestamp = require('./timestamp').Timestamp,
@@ -15057,9 +15703,9 @@ var BSON = function() {
  * @return {Buffer} returns the Buffer object containing the serialized object.
  * @api public
  */
-BSON.prototype.serialize = function serialize(object, checkKeys, asBuffer, serializeFunctions, index) {
+BSON.prototype.serialize = function serialize(object, checkKeys, asBuffer, serializeFunctions, index, ignoreUndefined) {
 	// Attempt to serialize
-	var serializationIndex = serializer(buffer, object, checkKeys, index || 0, 0, serializeFunctions);
+	var serializationIndex = serializer(buffer, object, checkKeys, index || 0, 0, serializeFunctions, ignoreUndefined);
 	// Create the final buffer
 	var finishedBuffer = new Buffer(serializationIndex);
 	// Copy into the finished buffer
@@ -15079,9 +15725,9 @@ BSON.prototype.serialize = function serialize(object, checkKeys, asBuffer, seria
  * @return {Number} returns the new write index in the Buffer.
  * @api public
  */
-BSON.prototype.serializeWithBufferAndIndex = function(object, checkKeys, finalBuffer, startIndex, serializeFunctions) {
+BSON.prototype.serializeWithBufferAndIndex = function(object, checkKeys, finalBuffer, startIndex, serializeFunctions, ignoreUndefined) {
 	// Attempt to serialize
-	var serializationIndex = serializer(buffer, object, checkKeys, startIndex || 0, 0, serializeFunctions);
+	var serializationIndex = serializer(buffer, object, checkKeys, startIndex || 0, 0, serializeFunctions, ignoreUndefined);
 	buffer.copy(finalBuffer, startIndex, 0, serializationIndex);
 	// Return the index
 	return startIndex + serializationIndex - 1;
@@ -15114,8 +15760,8 @@ BSON.prototype.deserialize = function(data, options) {
  * @return {Number} returns the number of bytes the BSON object will take up.
  * @api public
  */
-BSON.prototype.calculateObjectSize = function(object, serializeFunctions) {
-  return calculateObjectSize(object, serializeFunctions);
+BSON.prototype.calculateObjectSize = function(object, serializeFunctions, ignoreUndefined) {
+  return calculateObjectSize(object, serializeFunctions, ignoreUndefined);
 }
 
 /**
@@ -15324,6 +15970,7 @@ BSON.BSON_BINARY_SUBTYPE_USER_DEFINED = 128;
 // Return BSON
 module.exports = BSON;
 module.exports.Code = Code;
+module.exports.Map = Map;
 module.exports.Symbol = Symbol;
 module.exports.BSON = BSON;
 module.exports.DBRef = DBRef;
@@ -15337,7 +15984,7 @@ module.exports.MaxKey = MaxKey;
 module.exports.BSONRegExp = BSONRegExp;
 
 }).call(this,require("buffer").Buffer)
-},{"./binary":56,"./code":59,"./db_ref":60,"./double":61,"./float_parser":62,"./long":63,"./max_key":64,"./min_key":65,"./objectid":66,"./parser/calculate_size":67,"./parser/deserializer":68,"./parser/serializer":69,"./regexp":70,"./symbol":71,"./timestamp":72,"buffer":47}],59:[function(require,module,exports){
+},{"./binary":60,"./code":63,"./db_ref":64,"./double":65,"./float_parser":66,"./long":67,"./map":68,"./max_key":69,"./min_key":70,"./objectid":71,"./parser/calculate_size":72,"./parser/deserializer":73,"./parser/serializer":74,"./regexp":75,"./symbol":76,"./timestamp":77,"buffer":51}],63:[function(require,module,exports){
 /**
  * A class representation of the BSON Code type.
  *
@@ -15362,7 +16009,7 @@ Code.prototype.toJSON = function() {
 
 module.exports = Code;
 module.exports.Code = Code;
-},{}],60:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /**
  * A class representation of the BSON DBRef type.
  *
@@ -15395,7 +16042,7 @@ DBRef.prototype.toJSON = function() {
 
 module.exports = DBRef;
 module.exports.DBRef = DBRef;
-},{}],61:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 /**
  * A class representation of the BSON Double type.
  *
@@ -15429,7 +16076,7 @@ Double.prototype.toJSON = function() {
 
 module.exports = Double;
 module.exports.Double = Double;
-},{}],62:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 // Copyright (c) 2008, Fair Oaks Labs, Inc.
 // All rights reserved.
 // 
@@ -15551,7 +16198,7 @@ var writeIEEE754 = function(buffer, value, offset, endian, mLen, nBytes) {
 
 exports.readIEEE754 = readIEEE754;
 exports.writeIEEE754 = writeIEEE754;
-},{}],63:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16408,7 +17055,136 @@ Long.TWO_PWR_24_ = Long.fromInt(1 << 24);
  */
 module.exports = Long;
 module.exports.Long = Long;
-},{}],64:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
+(function (global){
+"use strict"
+
+// We have an ES6 Map available, return the native instance
+if(typeof global.Map !== 'undefined') {
+  module.exports = global.Map;
+  module.exports.Map = global.Map;
+} else {
+  // We will return a polyfill
+  var Map = function(array) {
+    this._keys = [];
+    this._values = {};
+
+    for(var i = 0; i < array.length; i++) {
+      if(array[i] == null) continue;  // skip null and undefined
+      var entry = array[i];
+      var key = entry[0];
+      var value = entry[1];
+      // Add the key to the list of keys in order
+      this._keys.push(key);
+      // Add the key and value to the values dictionary with a point
+      // to the location in the ordered keys list
+      this._values[key] = {v: value, i: this._keys.length - 1};
+    }
+  }
+
+  Map.prototype.clear = function() {
+    this._keys = [];
+    this._values = {};
+  }
+
+  Map.prototype.delete = function(key) {
+    var value = this._values[key];
+    if(value == null) return false;
+    // Delete entry
+    delete this._values[key];
+    // Remove the key from the ordered keys list
+    this._keys.splice(value.i, 1);
+    return true;
+  }
+
+  Map.prototype.entries = function() {
+    var self = this;
+    var index = 0;
+
+    return {
+      next: function() {
+        var key = self._keys[index++];
+        return {
+          value: key !== undefined ? [key, self._values[key].v] : undefined,
+          done: key !== undefined ? false : true
+        }
+      }
+    };
+  }
+
+  Map.prototype.forEach = function(callback, self) {
+    self = self || this;
+
+    for(var i = 0; i < this._keys.length; i++) {
+      var key = this._keys[i];
+      // Call the forEach callback
+      callback.call(self, this._values[key].v, key, self);
+    }
+  }
+
+  Map.prototype.get = function(key) {
+    return this._values[key] ? this._values[key].v : undefined;
+  }
+
+  Map.prototype.has = function(key) {
+    return this._values[key] != null;
+  }
+
+  Map.prototype.keys = function(key) {
+    var self = this;
+    var index = 0;
+
+    return {
+      next: function() {
+        var key = self._keys[index++];
+        return {
+          value: key !== undefined ? key : undefined,
+          done: key !== undefined ? false : true
+        }
+      }
+    };
+  }
+
+  Map.prototype.set = function(key, value) {
+    if(this._values[key]) {
+      this._values[key].v = value;
+      return this;
+    }
+
+    // Add the key to the list of keys in order
+    this._keys.push(key);
+    // Add the key and value to the values dictionary with a point
+    // to the location in the ordered keys list
+    this._values[key] = {v: value, i: this._keys.length - 1};
+    return this;
+  }
+
+  Map.prototype.values = function(key, value) {
+    var self = this;
+    var index = 0;
+
+    return {
+      next: function() {
+        var key = self._keys[index++];
+        return {
+          value: key !== undefined ? self._values[key].v : undefined,
+          done: key !== undefined ? false : true
+        }
+      }
+    };
+  }
+
+  // Last ismaster
+  Object.defineProperty(Map.prototype, 'size', {
+    enumerable:true,
+    get: function() { return this._keys.length; }
+  });
+
+  module.exports = Map;
+  module.exports.Map = Map;
+}
+}).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],69:[function(require,module,exports){
 /**
  * A class representation of the BSON MaxKey type.
  *
@@ -16423,7 +17199,7 @@ function MaxKey() {
 
 module.exports = MaxKey;
 module.exports.MaxKey = MaxKey;
-},{}],65:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /**
  * A class representation of the BSON MinKey type.
  *
@@ -16438,7 +17214,7 @@ function MinKey() {
 
 module.exports = MinKey;
 module.exports.MinKey = MinKey;
-},{}],66:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 (function (process){
 /**
  * Module dependencies.
@@ -16598,10 +17374,15 @@ ObjectID.prototype.toJSON = function() {
 * @return {boolean} the result of comparing two ObjectID's
 */
 ObjectID.prototype.equals = function equals (otherID) {
-  if(otherID == null) return false;
-  var id = (otherID instanceof ObjectID || otherID.toHexString)
-    ? otherID.id
-    : ObjectID.createFromHexString(otherID).id;
+  var id;
+
+  if(otherID != null && (otherID instanceof ObjectID || otherID.toHexString)) {
+    id = otherID.id;
+  } else if(typeof otherID == 'string' && ObjectID.isValid(otherID)) {
+    id = ObjectID.createFromHexString(otherID).id;
+  } else {
+    return false;
+  }
 
   return this.id === id;
 }
@@ -16715,7 +17496,7 @@ module.exports.ObjectID = ObjectID;
 module.exports.ObjectId = ObjectID;
 
 }).call(this,require("FWaASH"))
-},{"./binary_parser":57,"FWaASH":53}],67:[function(require,module,exports){
+},{"./binary_parser":61,"FWaASH":57}],72:[function(require,module,exports){
 (function (Buffer){
 "use strict"
 
@@ -16738,12 +17519,12 @@ var isDate = function isDate(d) {
   return typeof d === 'object' && Object.prototype.toString.call(d) === '[object Date]';
 }
 
-var calculateObjectSize = function calculateObjectSize(object, serializeFunctions) {
+var calculateObjectSize = function calculateObjectSize(object, serializeFunctions, ignoreUndefined) {
   var totalLength = (4 + 1);
 
   if(Array.isArray(object)) {
     for(var i = 0; i < object.length; i++) {
-      totalLength += calculateElement(i.toString(), object[i], serializeFunctions, true)
+      totalLength += calculateElement(i.toString(), object[i], serializeFunctions, true, ignoreUndefined)
     }
   } else {
 		// If we have toBSON defined, override the current object
@@ -16753,7 +17534,7 @@ var calculateObjectSize = function calculateObjectSize(object, serializeFunction
 
 		// Calculate size
     for(var key in object) {
-      totalLength += calculateElement(key, object[key], serializeFunctions)
+      totalLength += calculateElement(key, object[key], serializeFunctions, false, ignoreUndefined)
     }
   }
 
@@ -16764,7 +17545,7 @@ var calculateObjectSize = function calculateObjectSize(object, serializeFunction
  * @ignore
  * @api private
  */
-function calculateElement(name, value, serializeFunctions, isArray) {
+function calculateElement(name, value, serializeFunctions, isArray, ignoreUndefined) {
 	// If we have toBSON defined, override the current object
   if(value && value.toBSON){
     value = value.toBSON();
@@ -16784,7 +17565,7 @@ function calculateElement(name, value, serializeFunctions, isArray) {
         return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + (8 + 1);
       }
     case 'undefined':
-      if(isArray) return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + (1);
+      if(isArray || !ignoreUndefined) return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + (1);
       return 0;
     case 'boolean':
       return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + (1 + 1);
@@ -16803,7 +17584,7 @@ function calculateElement(name, value, serializeFunctions, isArray) {
       } else if(value instanceof Code || value['_bsontype'] == 'Code') {
         // Calculate size depending on the availability of a scope
         if(value.scope != null && Object.keys(value.scope).length > 0) {
-          return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + 4 + 4 + Buffer.byteLength(value.code.toString(), 'utf8') + 1 + calculateObjectSize(value.scope, serializeFunctions);
+          return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + 4 + 4 + Buffer.byteLength(value.code.toString(), 'utf8') + 1 + calculateObjectSize(value.scope, serializeFunctions, ignoreUndefined);
         } else {
           return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + 4 + Buffer.byteLength(value.code.toString(), 'utf8') + 1;
         }
@@ -16828,7 +17609,7 @@ function calculateElement(name, value, serializeFunctions, isArray) {
           ordered_values['$db'] = value.db;
         }
 
-        return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + calculateObjectSize(ordered_values, serializeFunctions);
+        return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + calculateObjectSize(ordered_values, serializeFunctions, ignoreUndefined);
       } else if(value instanceof RegExp || Object.prototype.toString.call(value) === '[object RegExp]') {
           return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + Buffer.byteLength(value.source, 'utf8') + 1
             + (value.global ? 1 : 0) + (value.ignoreCase ? 1 : 0) + (value.multiline ? 1 : 0) + 1
@@ -16836,7 +17617,7 @@ function calculateElement(name, value, serializeFunctions, isArray) {
           return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + Buffer.byteLength(value.pattern, 'utf8') + 1
             + Buffer.byteLength(value.options, 'utf8') + 1
       } else {
-        return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + calculateObjectSize(value, serializeFunctions) + 1;
+        return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + calculateObjectSize(value, serializeFunctions, ignoreUndefined) + 1;
       }
     case 'function':
       // WTF for 0.4.X where typeof /someregexp/ === 'function'
@@ -16845,7 +17626,7 @@ function calculateElement(name, value, serializeFunctions, isArray) {
           + (value.global ? 1 : 0) + (value.ignoreCase ? 1 : 0) + (value.multiline ? 1 : 0) + 1
       } else {
         if(serializeFunctions && value.scope != null && Object.keys(value.scope).length > 0) {
-          return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + 4 + 4 + Buffer.byteLength(value.toString(), 'utf8') + 1 + calculateObjectSize(value.scope, serializeFunctions);
+          return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + 4 + 4 + Buffer.byteLength(value.toString(), 'utf8') + 1 + calculateObjectSize(value.scope, serializeFunctions, ignoreUndefined);
         } else if(serializeFunctions) {
           return (name != null ? (Buffer.byteLength(name, 'utf8') + 1) : 0) + 1 + 4 + Buffer.byteLength(value.toString(), 'utf8') + 1;
         }
@@ -17029,7 +17810,7 @@ var JS_INT_MIN_LONG = Long.fromNumber(-0x20000000000000);  // Any integer down t
 module.exports = calculateObjectSize;
 
 }).call(this,require("buffer").Buffer)
-},{"../binary":56,"../code":59,"../db_ref":60,"../double":61,"../float_parser":62,"../long":63,"../max_key":64,"../min_key":65,"../objectid":66,"../regexp":70,"../symbol":71,"../timestamp":72,"buffer":47}],68:[function(require,module,exports){
+},{"../binary":60,"../code":63,"../db_ref":64,"../double":65,"../float_parser":66,"../long":67,"../max_key":69,"../min_key":70,"../objectid":71,"../regexp":75,"../symbol":76,"../timestamp":77,"buffer":51}],73:[function(require,module,exports){
 "use strict"
 
 var writeIEEE754 = require('../float_parser').writeIEEE754,
@@ -17094,6 +17875,7 @@ var deserializeObject = function(buffer, options, isArray) {
 	var fieldsAsRaw = options['fieldsAsRaw'] == null ? {} : options['fieldsAsRaw'];
   // Return BSONRegExp objects instead of native regular expressions
   var bsonRegExp = typeof options['bsonRegExp'] == 'boolean' ? options['bsonRegExp'] : false;
+  var promoteBuffers = options['promoteBuffers'] == null ? false : options['promoteBuffers'];
 
   // Validate that we have at least 4 bytes of buffer
   if(buffer.length < 5) throw new Error("corrupt bson message < 5 bytes long");
@@ -17168,8 +17950,13 @@ var deserializeObject = function(buffer, options, isArray) {
         if(subType == Binary.SUBTYPE_BYTE_ARRAY) {
           binarySize = buffer[index++] | buffer[index++] << 8 | buffer[index++] << 16 | buffer[index++] << 24;
         }
-        // Slice the data
-        object[name] = new Binary(buffer.slice(index, index + binarySize), subType);
+        if(promoteBuffers) {
+          // assign reference to sliced Buffer object
+          object[name] = buffer.slice(index, index + binarySize);
+        } else {
+          // Slice the data
+          object[name] = new Binary(buffer.slice(index, index + binarySize), subType);
+        }
       } else {
         var _buffer = typeof Uint8Array != 'undefined' ? new Uint8Array(new ArrayBuffer(binarySize)) : new Array(binarySize);
         // If we have subtype 2 skip the 4 bytes for the size
@@ -17180,8 +17967,13 @@ var deserializeObject = function(buffer, options, isArray) {
         for(var i = 0; i < binarySize; i++) {
           _buffer[i] = buffer[index + i];
         }
-        // Create the binary object
-        object[name] = new Binary(_buffer, subType);
+        if(promoteBuffers) {
+          // assign reference to Buffer object
+          object[name] = _buffer;
+        } else {
+          // Create the binary object
+          object[name] = new Binary(_buffer, subType);
+        }
       }
       // Update the index
       index = index + binarySize;
@@ -17575,13 +18367,14 @@ var JS_INT_MIN_LONG = Long.fromNumber(-0x20000000000000);  // Any integer down t
 
 module.exports = deserialize
 
-},{"../binary":56,"../code":59,"../db_ref":60,"../double":61,"../float_parser":62,"../long":63,"../max_key":64,"../min_key":65,"../objectid":66,"../regexp":70,"../symbol":71,"../timestamp":72,"util":55}],69:[function(require,module,exports){
+},{"../binary":60,"../code":63,"../db_ref":64,"../double":65,"../float_parser":66,"../long":67,"../max_key":69,"../min_key":70,"../objectid":71,"../regexp":75,"../symbol":76,"../timestamp":77,"util":59}],74:[function(require,module,exports){
 (function (Buffer){
 "use strict"
 
 var writeIEEE754 = require('../float_parser').writeIEEE754,
   readIEEE754 = require('../float_parser').readIEEE754,
   Long = require('../long').Long,
+  Map = require('../map'),
   Double = require('../double').Double,
   Timestamp = require('../timestamp').Timestamp,
   ObjectID = require('../objectid').ObjectID,
@@ -17753,6 +18546,9 @@ var serializeRegExp = function(buffer, key, value, index) {
   // Encode the name
   index = index + numberOfWrittenBytes;
   buffer[index++] = 0;
+  if (value.source && value.source.match(regexp) != null) {
+    throw Error("value " + value.source + " must not contain null bytes");
+  }
   // Adjust the index
   index = index + buffer.write(value.source, index, 'utf8');
   // Write zero
@@ -17844,7 +18640,7 @@ var serializeBuffer = function(buffer, key, value, index) {
   return index;
 }
 
-var serializeObject = function(buffer, key, value, index, checkKeys, depth, serializeFunctions) {
+var serializeObject = function(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined) {
   // Write the type
   buffer[index++] = Array.isArray(value) ? BSON.BSON_DATA_ARRAY : BSON.BSON_DATA_OBJECT;
   // Number of written bytes
@@ -17852,7 +18648,7 @@ var serializeObject = function(buffer, key, value, index, checkKeys, depth, seri
   // Encode the name
   index = index + numberOfWrittenBytes;
   buffer[index++] = 0;
-  var endIndex = serializeInto(buffer, value, checkKeys, index, depth + 1, serializeFunctions);
+  var endIndex = serializeInto(buffer, value, checkKeys, index, depth + 1, serializeFunctions, ignoreUndefined);
   // Write size
   var size = endIndex - index;
   return endIndex;
@@ -17920,7 +18716,7 @@ var serializeFunction = function(buffer, key, value, index, checkKeys, depth) {
   return index;
 }
 
-var serializeCode = function(buffer, key, value, index, checkKeys, depth, serializeFunctions) {
+var serializeCode = function(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined) {
   if(value.scope != null && Object.keys(value.scope).length > 0) {
     // Write the type
     buffer[index++] = BSON.BSON_DATA_CODE_W_SCOPE;
@@ -17952,7 +18748,7 @@ var serializeCode = function(buffer, key, value, index, checkKeys, depth, serial
 
     //
     // Serialize the scope value
-    var endIndex = serializeInto(buffer, value.scope, checkKeys, index, depth + 1, serializeFunctions)
+    var endIndex = serializeInto(buffer, value.scope, checkKeys, index, depth + 1, serializeFunctions, ignoreUndefined)
     index = endIndex - 1;
 
     // Writ the total
@@ -18085,7 +18881,7 @@ var serializeDBRef = function(buffer, key, value, index, depth, serializeFunctio
   return endIndex;
 }
 
-var serializeInto = function serializeInto(buffer, object, checkKeys, startingIndex, depth, serializeFunctions) {
+var serializeInto = function serializeInto(buffer, object, checkKeys, startingIndex, depth, serializeFunctions, ignoreUndefined) {
   startingIndex = startingIndex || 0;
 
   // Start place to serialize into
@@ -18106,7 +18902,6 @@ var serializeInto = function serializeInto(buffer, object, checkKeys, startingIn
       }
 
       var type = typeof value;
-
       if(type == 'string') {
         index = serializeString(buffer, key, value, index);
       } else if(type == 'number') {
@@ -18124,7 +18919,7 @@ var serializeInto = function serializeInto(buffer, object, checkKeys, startingIn
       } else if(value instanceof RegExp || isRegExp(value)) {
         index = serializeRegExp(buffer, key, value, index);
       } else if(type == 'object' && value['_bsontype'] == null) {
-        index = serializeObject(buffer, key, value, index, checkKeys, depth, serializeFunctions);
+        index = serializeObject(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined);
       } else if(value['_bsontype'] == 'Long' || value['_bsontype'] == 'Timestamp') {
         index = serializeLong(buffer, key, value, index);
       } else if(value['_bsontype'] == 'Double') {
@@ -18132,7 +18927,85 @@ var serializeInto = function serializeInto(buffer, object, checkKeys, startingIn
       } else if(typeof value == 'function' && serializeFunctions) {
         index = serializeFunction(buffer, key, value, index, checkKeys, depth, serializeFunctions);
       } else if(value['_bsontype'] == 'Code') {
-        index = serializeCode(buffer, key, value, index, checkKeys, depth, serializeFunctions);
+        index = serializeCode(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined);
+      } else if(value['_bsontype'] == 'Binary') {
+        index = serializeBinary(buffer, key, value, index);
+      } else if(value['_bsontype'] == 'Symbol') {
+        index = serializeSymbol(buffer, key, value, index);
+      } else if(value['_bsontype'] == 'DBRef') {
+        index = serializeDBRef(buffer, key, value, index, depth, serializeFunctions);
+      } else if(value['_bsontype'] == 'BSONRegExp') {
+        index = serializeBSONRegExp(buffer, key, value, index);        
+      } else if(value['_bsontype'] == 'MinKey' || value['_bsontype'] == 'MaxKey') {
+        index = serializeMinMax(buffer, key, value, index);
+      }
+    }
+  } else if(object instanceof Map) {
+    var iterator = object.entries();
+    var done = false;
+
+    while(!done) {
+      // Unpack the next entry
+      var entry = iterator.next();
+      done = entry.done;
+      // Are we done, then skip and terminate
+      if(done) continue;
+
+      // Get the entry values
+      var key = entry.value[0];
+      var value = entry.value[1];
+
+      // Check the type of the value
+      var type = typeof value;
+
+      // Check the key and throw error if it's illegal
+      if(key != '$db' && key != '$ref' && key != '$id') {
+        if (key.match(regexp) != null) {
+          // The BSON spec doesn't allow keys with null bytes because keys are
+          // null-terminated.
+          throw Error("key " + key + " must not contain null bytes");
+        }
+
+        if (checkKeys) {
+          if('$' == key[0]) {
+            throw Error("key " + key + " must not start with '$'");
+          } else if (!!~key.indexOf('.')) {
+            throw Error("key " + key + " must not contain '.'");
+          }
+        }
+      }
+      
+      // console.log("---------------------------------------------------")
+      // console.dir("key = " + key)
+      // console.dir("value = " + value)
+
+      if(type == 'string') {
+        index = serializeString(buffer, key, value, index);
+      } else if(type == 'number') {
+        index = serializeNumber(buffer, key, value, index);
+      } else if(type == 'boolean') {
+        index = serializeBoolean(buffer, key, value, index);
+      } else if(value instanceof Date || isDate(value)) {
+        index = serializeDate(buffer, key, value, index);
+      } else if(value === undefined && ignoreUndefined == true) {
+      } else if(value === null || value === undefined) {
+        index = serializeUndefined(buffer, key, value, index);
+      } else if(value['_bsontype'] == 'ObjectID') {
+        index = serializeObjectId(buffer, key, value, index);
+      } else if(Buffer.isBuffer(value)) {
+        index = serializeBuffer(buffer, key, value, index);
+      } else if(value instanceof RegExp || isRegExp(value)) {
+        index = serializeRegExp(buffer, key, value, index);
+      } else if(type == 'object' && value['_bsontype'] == null) {
+        index = serializeObject(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined);
+      } else if(value['_bsontype'] == 'Long' || value['_bsontype'] == 'Timestamp') {
+        index = serializeLong(buffer, key, value, index);
+      } else if(value['_bsontype'] == 'Double') {
+        index = serializeDouble(buffer, key, value, index);
+      } else if(value['_bsontype'] == 'Code') {
+        index = serializeCode(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined);
+      } else if(typeof value == 'function' && serializeFunctions) {
+        index = serializeFunction(buffer, key, value, index, checkKeys, depth, serializeFunctions);
       } else if(value['_bsontype'] == 'Binary') {
         index = serializeBinary(buffer, key, value, index);
       } else if(value['_bsontype'] == 'Symbol') {
@@ -18190,8 +19063,8 @@ var serializeInto = function serializeInto(buffer, object, checkKeys, startingIn
         index = serializeBoolean(buffer, key, value, index);
       } else if(value instanceof Date || isDate(value)) {
         index = serializeDate(buffer, key, value, index);
-      } else if(value === undefined) {
-      } else if(value === null) {
+      } else if(value === undefined && ignoreUndefined == true) {
+      } else if(value === null || value === undefined) {
         index = serializeUndefined(buffer, key, value, index);
       } else if(value['_bsontype'] == 'ObjectID') {
         index = serializeObjectId(buffer, key, value, index);
@@ -18200,13 +19073,13 @@ var serializeInto = function serializeInto(buffer, object, checkKeys, startingIn
       } else if(value instanceof RegExp || isRegExp(value)) {
         index = serializeRegExp(buffer, key, value, index);
       } else if(type == 'object' && value['_bsontype'] == null) {
-        index = serializeObject(buffer, key, value, index, checkKeys, depth, serializeFunctions);
+        index = serializeObject(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined);
       } else if(value['_bsontype'] == 'Long' || value['_bsontype'] == 'Timestamp') {
         index = serializeLong(buffer, key, value, index);
       } else if(value['_bsontype'] == 'Double') {
         index = serializeDouble(buffer, key, value, index);
       } else if(value['_bsontype'] == 'Code') {
-        index = serializeCode(buffer, key, value, index, checkKeys, depth, serializeFunctions);
+        index = serializeCode(buffer, key, value, index, checkKeys, depth, serializeFunctions, ignoreUndefined);
       } else if(typeof value == 'function' && serializeFunctions) {
         index = serializeFunction(buffer, key, value, index, checkKeys, depth, serializeFunctions);
       } else if(value['_bsontype'] == 'Binary') {
@@ -18410,7 +19283,7 @@ var JS_INT_MIN_LONG = Long.fromNumber(-0x20000000000000);  // Any integer down t
 module.exports = serializeInto;
 
 }).call(this,require("buffer").Buffer)
-},{"../binary":56,"../code":59,"../db_ref":60,"../double":61,"../float_parser":62,"../long":63,"../max_key":64,"../min_key":65,"../objectid":66,"../regexp":70,"../symbol":71,"../timestamp":72,"buffer":47}],70:[function(require,module,exports){
+},{"../binary":60,"../code":63,"../db_ref":64,"../double":65,"../float_parser":66,"../long":67,"../map":68,"../max_key":69,"../min_key":70,"../objectid":71,"../regexp":75,"../symbol":76,"../timestamp":77,"buffer":51}],75:[function(require,module,exports){
 /**
  * A class representation of the BSON RegExp type.
  *
@@ -18441,7 +19314,7 @@ function BSONRegExp(pattern, options) {
 
 module.exports = BSONRegExp;
 module.exports.BSONRegExp = BSONRegExp;
-},{}],71:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 /**
  * A class representation of the BSON Symbol type.
  *
@@ -18489,7 +19362,7 @@ Symbol.prototype.toJSON = function() {
 
 module.exports = Symbol;
 module.exports.Symbol = Symbol;
-},{}],72:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19346,7 +20219,7 @@ Timestamp.TWO_PWR_24_ = Timestamp.fromInt(1 << 24);
  */
 module.exports = Timestamp;
 module.exports.Timestamp = Timestamp;
-},{}],73:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 // TODO Add in pre and post skipping options
 module.exports = {
   /**
@@ -19539,7 +20412,7 @@ function once (fn, scope) {
   };
 }
 
-},{}],74:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -19772,10 +20645,10 @@ Kareem.prototype.clone = function() {
 module.exports = Kareem;
 
 }).call(this,require("FWaASH"))
-},{"FWaASH":53}],75:[function(require,module,exports){
+},{"FWaASH":57}],80:[function(require,module,exports){
 module.exports = exports = require('./lib');
 
-},{"./lib":76}],76:[function(require,module,exports){
+},{"./lib":81}],81:[function(require,module,exports){
 
 /**
  * Returns the value of object `o` at the given `path`.
@@ -19960,7 +20833,7 @@ function K (v) {
   return v;
 }
 
-},{}],77:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 (function (process){
 'use strict';
 var util = require('util');
@@ -20404,7 +21277,7 @@ Promise.deferred = function deferred() {
 
 
 }).call(this,require("FWaASH"))
-},{"FWaASH":53,"events":51,"util":55}],78:[function(require,module,exports){
+},{"FWaASH":57,"events":55,"util":59}],83:[function(require,module,exports){
 'use strict';
 
 /**
@@ -20448,7 +21321,7 @@ function notImplemented (method) {
 }
 
 
-},{}],79:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 'use strict';
 
 var env = require('../env')
@@ -20463,7 +21336,7 @@ module.exports =
   require('./collection');
 
 
-},{"../env":81,"./collection":78,"./node":80}],80:[function(require,module,exports){
+},{"../env":86,"./collection":83,"./node":85}],85:[function(require,module,exports){
 'use strict';
 
 /**
@@ -20565,7 +21438,7 @@ NodeCollection.prototype.findStream = function(match, findOptions, streamOptions
 module.exports = exports = NodeCollection;
 
 
-},{"../utils":84,"./collection":78}],81:[function(require,module,exports){
+},{"../utils":89,"./collection":83}],86:[function(require,module,exports){
 (function (process,global,Buffer){
 'use strict';
 
@@ -20591,7 +21464,7 @@ exports.type = exports.isNode ? 'node'
   : 'unknown'
 
 }).call(this,require("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"FWaASH":53,"buffer":47}],82:[function(require,module,exports){
+},{"FWaASH":57,"buffer":51}],87:[function(require,module,exports){
 'use strict';
 
 /**
@@ -23205,7 +24078,7 @@ module.exports = exports = Query;
 // TODO
 // test utils
 
-},{"./collection":79,"./collection/collection":78,"./env":81,"./permissions":83,"./utils":84,"assert":46,"bluebird":85,"debug":86,"sliced":91,"util":55}],83:[function(require,module,exports){
+},{"./collection":84,"./collection/collection":83,"./env":86,"./permissions":88,"./utils":89,"assert":50,"bluebird":90,"debug":91,"sliced":95,"util":59}],88:[function(require,module,exports){
 'use strict';
 
 var denied = exports;
@@ -23297,7 +24170,7 @@ denied.count.maxScan =
 denied.count.snapshot =
 denied.count.tailable = true;
 
-},{}],84:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 (function (process,Buffer){
 'use strict';
 
@@ -23632,7 +24505,7 @@ exports.cloneBuffer = function (buff) {
 };
 
 }).call(this,require("FWaASH"),require("buffer").Buffer)
-},{"FWaASH":53,"buffer":47,"regexp-clone":90}],85:[function(require,module,exports){
+},{"FWaASH":57,"buffer":51,"regexp-clone":94}],90:[function(require,module,exports){
 (function (process,global){
 /* @preserve
  * The MIT License (MIT)
@@ -28740,7 +29613,7 @@ function isUndefined(arg) {
 },{}]},{},[4])(4)
 });                    ;if (typeof window !== 'undefined' && window !== null) {                               window.P = window.Promise;                                                     } else if (typeof self !== 'undefined' && self !== null) {                             self.P = self.Promise;                                                         }
 }).call(this,require("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"FWaASH":53}],86:[function(require,module,exports){
+},{"FWaASH":57}],91:[function(require,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -28910,7 +29783,7 @@ function localstorage(){
   } catch (e) {}
 }
 
-},{"./debug":87}],87:[function(require,module,exports){
+},{"./debug":92}],92:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -29109,7 +29982,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":88}],88:[function(require,module,exports){
+},{"ms":93}],93:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -29236,44 +30109,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],89:[function(require,module,exports){
-/**
-
-# ms.js
-
-No more painful `setTimeout(fn, 60 * 4 * 3 * 2 * 1 * Infinity * NaN * '☃')`.
-
-    ms('2d')      // 172800000
-    ms('1.5h')    // 5400000
-    ms('1h')      // 3600000
-    ms('1m')      // 60000
-    ms('5s')      // 5000
-    ms('500ms')    // 500
-    ms('100')     // '100'
-    ms(100)       // 100
-
-**/
-
-(function (g) {
-  var r = /(\d*.?\d+)([mshd]+)/
-    , _ = {}
-
-  _.ms = 1;
-  _.s = 1000;
-  _.m = _.s * 60;
-  _.h = _.m * 60;
-  _.d = _.h * 24;
-
-  function ms (s) {
-    if (s == Number(s)) return Number(s);
-    r.exec(s.toLowerCase());
-    return RegExp.$1 * _[RegExp.$2];
-  }
-
-  g.top ? g.ms = ms : module.exports = ms;
-})(this);
-
-},{}],90:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 
 var toString = Object.prototype.toString;
 
@@ -29295,10 +30131,10 @@ module.exports = exports = function (regexp) {
 }
 
 
-},{}],91:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 module.exports = exports = require('./lib/sliced');
 
-},{"./lib/sliced":92}],92:[function(require,module,exports){
+},{"./lib/sliced":96}],96:[function(require,module,exports){
 
 /**
  * An Array.prototype.slice.call(arguments) alternative

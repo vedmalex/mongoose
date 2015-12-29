@@ -2,13 +2,13 @@
  * Test dependencies.
  */
 
-var start = require('./common')
-  , mongoose = start.mongoose
-  , Schema = mongoose.Schema
-  , assert = require('assert')
-  , random = require('../lib/utils').random
-  , util = require('util')
-  , async = require('async');
+var start = require('./common'),
+    mongoose = start.mongoose,
+    Schema = mongoose.Schema,
+    assert = require('assert'),
+    random = require('../lib/utils').random,
+    util = require('util'),
+    async = require('async');
 
 
 /**
@@ -34,7 +34,7 @@ describe('model', function() {
 
     before(function() {
       db = start();
-      BaseEvent = db.model('model-discriminator-querying-event', EventSchema, 'model-discriminator-querying-'+random());
+      BaseEvent = db.model('model-discriminator-querying-event', EventSchema, 'model-discriminator-querying-' + random());
       ImpressionEvent = BaseEvent.discriminator('model-discriminator-querying-impression', ImpressionEventSchema);
       ConversionEvent = BaseEvent.discriminator('model-discriminator-querying-conversion', ConversionEventSchema);
     });
@@ -92,7 +92,7 @@ describe('model', function() {
             function(next) { d1.save(next); },
             function(next) { d2.save(next); },
             function(next) { d3.save(next); },
-            function(next) { c.save(next);  },
+            function(next) { c.save(next); },
             function(next) {
               ContainerModel.findOne({}).populate('events').exec(function(err, doc) {
                 assert.ifError(err);
@@ -118,7 +118,7 @@ describe('model', function() {
 
     describe('find', function() {
       it('hydrates correct models', function(done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -149,7 +149,7 @@ describe('model', function() {
       });
 
       var checkHydratesCorrectModels = function(fields, done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -266,7 +266,7 @@ describe('model', function() {
         });
       });
 
-      var checkDiscriminatorModelsFindDocumentsOfItsType = function(fields, done){
+      var checkDiscriminatorModelsFindDocumentsOfItsType = function(fields, done) {
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent1 = new ConversionEvent({ name: 'Conversion event 1', revenue: 1 });
         var conversionEvent2 = new ConversionEvent({ name: 'Conversion event 2', revenue: 2 });
@@ -331,7 +331,7 @@ describe('model', function() {
       });
 
       it('hydrates streams', function(done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -344,7 +344,7 @@ describe('model', function() {
               var stream = BaseEvent.find({}).sort('name').stream();
 
               stream.on('data', function(doc) {
-                switch(doc.name) {
+                switch (doc.name) {
                   case 'Base event':
                     assert.ok(doc instanceof BaseEvent);
                     break;
@@ -361,7 +361,7 @@ describe('model', function() {
                 }
               });
 
-              stream.on('error', function (err) {
+              stream.on('error', function(err) {
                 assert.ifError(err);
               });
 
@@ -376,7 +376,7 @@ describe('model', function() {
 
     describe('findOne', function() {
       it('hydrates correct model', function(done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -415,7 +415,7 @@ describe('model', function() {
       });
 
       var checkHydratesCorrectModels = function(fields, done, checkUndefinedRevenue) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -573,7 +573,7 @@ describe('model', function() {
 
     describe('findOneAndUpdate', function() {
       it('does not update models of other types', function(done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -596,7 +596,7 @@ describe('model', function() {
       });
 
       it('updates models of its own type', function(done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -621,7 +621,7 @@ describe('model', function() {
       });
 
       it('base model modifies any event type', function(done) {
-        var baseEvent  = new BaseEvent({ name: 'Base event' });
+        var baseEvent = new BaseEvent({ name: 'Base event' });
         var impressionEvent = new ImpressionEvent({ name: 'Impression event' });
         var conversionEvent = new ConversionEvent({ name: 'Conversion event', revenue: 1.337 });
 
@@ -653,15 +653,15 @@ describe('model', function() {
         var busSchema = new Schema({ speed: Number });
 
         var userSchema = new Schema({
-            vehicles: [{ type: Schema.Types.ObjectId, ref: 'ModelDiscriminatorPopulationVehicle' }]
-          , favoriteVehicle: { type: Schema.Types.ObjectId, ref: 'ModelDiscriminatorPopulationVehicle' }
-          , favoriteBus: { type: Schema.Types.ObjectId, ref: 'ModelDiscriminatorPopulationBus' }
+          vehicles: [{ type: Schema.Types.ObjectId, ref: 'ModelDiscriminatorPopulationVehicle' }],
+          favoriteVehicle: { type: Schema.Types.ObjectId, ref: 'ModelDiscriminatorPopulationVehicle' },
+          favoriteBus: { type: Schema.Types.ObjectId, ref: 'ModelDiscriminatorPopulationBus' }
         });
 
-        var Vehicle = db.model('ModelDiscriminatorPopulationVehicle', vehicleSchema)
-          , Car = Vehicle.discriminator('ModelDiscriminatorPopulationCar', carSchema)
-          , Bus = Vehicle.discriminator('ModelDiscriminatorPopulationBus', busSchema)
-          , User = db.model('ModelDiscriminatorPopulationUser', userSchema);
+        var Vehicle = db.model('ModelDiscriminatorPopulationVehicle', vehicleSchema),
+            Car = Vehicle.discriminator('ModelDiscriminatorPopulationCar', carSchema),
+            Bus = Vehicle.discriminator('ModelDiscriminatorPopulationBus', busSchema),
+            User = db.model('ModelDiscriminatorPopulationUser', userSchema);
 
         Vehicle.create({}, function(err, vehicle) {
           assert.ifError(err);
@@ -674,15 +674,15 @@ describe('model', function() {
                   assert.ifError(err);
 
                   var expected = {
-                      __v: 0
-                    , _id: user._id
-                    , vehicles: [
-                        { _id: vehicle._id, __v: 0 }
-                      , { _id: car._id, speed: 160, __v: 0, __t: 'ModelDiscriminatorPopulationCar' }
-                      , { _id: bus._id, speed: 80, __v: 0, __t: 'ModelDiscriminatorPopulationBus' }
-                    ]
-                    , favoriteVehicle: { _id: car._id, speed: 160, __v: 0, __t: 'ModelDiscriminatorPopulationCar' }
-                    , favoriteBus: { _id: bus._id, speed: 80, __v: 0, __t: 'ModelDiscriminatorPopulationBus' }
+                    __v: 0,
+                    _id: user._id,
+                    vehicles: [
+                      { _id: vehicle._id, __v: 0 },
+                      { _id: car._id, speed: 160, __v: 0, __t: 'ModelDiscriminatorPopulationCar' },
+                      { _id: bus._id, speed: 80, __v: 0, __t: 'ModelDiscriminatorPopulationBus' }
+                    ],
+                    favoriteVehicle: { _id: car._id, speed: 160, __v: 0, __t: 'ModelDiscriminatorPopulationCar' },
+                    favoriteBus: { _id: bus._id, speed: 80, __v: 0, __t: 'ModelDiscriminatorPopulationBus' }
                   };
 
                   assert.deepEqual(user.toJSON(), expected);
@@ -706,7 +706,7 @@ describe('model', function() {
         });
       });
 
-      it('reference in child schemas (gh-2719)', function(done){
+      it('reference in child schemas (gh-2719)', function(done) {
         var vehicleSchema = new Schema({});
         var carSchema = new Schema({
           speed: Number,
@@ -722,21 +722,21 @@ describe('model', function() {
           num_of_places: Number
         });
 
-        var Vehicle = db.model('gh2719PopulationVehicle', vehicleSchema)
-          , Car = Vehicle.discriminator('gh2719PopulationCar', carSchema)
-          , Bus = Vehicle.discriminator('gh2719PopulationBus', busSchema)
-          , Garage = db.model('gh2719PopulationGarage', garageSchema);
+        var Vehicle = db.model('gh2719PopulationVehicle', vehicleSchema),
+            Car = Vehicle.discriminator('gh2719PopulationCar', carSchema),
+            Bus = Vehicle.discriminator('gh2719PopulationBus', busSchema),
+            Garage = db.model('gh2719PopulationGarage', garageSchema);
 
-        Garage.create({name: 'My', num_of_places: 3}, function(err, garage){
+        Garage.create({name: 'My', num_of_places: 3}, function(err, garage) {
           assert.ifError(err);
           Car.create({ speed: 160, garage: garage }, function(err) {
             assert.ifError(err);
             Bus.create({ speed: 80, garage: garage }, function(err) {
               assert.ifError(err);
-              Vehicle.find({}).populate('garage').exec(function(err, vehicles){
+              Vehicle.find({}).populate('garage').exec(function(err, vehicles) {
                 assert.ifError(err);
 
-                vehicles.forEach(function(v){
+                vehicles.forEach(function(v) {
                   assert.ok(v.garage instanceof Garage);
                 });
 
@@ -747,17 +747,17 @@ describe('model', function() {
         });
       });
 
-      it('reference in child schemas (gh-2719-2)', function(done){
+      it('reference in child schemas (gh-2719-2)', function(done) {
         var EventSchema, Event, TalkSchema, Talk, Survey;
 
         function BaseSchema() {
           Schema.apply(this, arguments);
 
           this.add({
-            name     : { type: String, required: true },
-            date     : { type: Date, required: true },
-            period   : { start : { type: String, required: true },
-              end   : { type: String, required: true }
+            name: { type: String, required: true },
+            date: { type: Date, required: true },
+            period: { start: { type: String, required: true },
+              end: { type: String, required: true }
             }
           });
         }
@@ -768,11 +768,11 @@ describe('model', function() {
         Event = db.model('Event', EventSchema);
 
         TalkSchema = new BaseSchema({
-          pin            : { type: String, required: true, index: { unique: true } },
-          totalAttendees : { type: Number },
-          speakers       : [{ type: Schema.Types.ObjectId, ref: 'Speaker' }],
-          surveys        : [{ type: Schema.Types.ObjectId, ref: 'Survey' }],
-          questions      : [{ type: Schema.Types.ObjectId, ref: 'Question' }]
+          pin: { type: String, required: true, index: { unique: true } },
+          totalAttendees: { type: Number },
+          speakers: [{ type: Schema.Types.ObjectId, ref: 'Speaker' }],
+          surveys: [{ type: Schema.Types.ObjectId, ref: 'Survey' }],
+          questions: [{ type: Schema.Types.ObjectId, ref: 'Question' }]
         });
 
         Talk = Event.discriminator('Talk', TalkSchema);
@@ -785,7 +785,7 @@ describe('model', function() {
         Survey.create({
           name: "That you see?",
           date: Date.now()
-        }, function(err, survey){
+        }, function(err, survey) {
           assert.ifError(err);
 
           Talk.create({
@@ -794,10 +794,10 @@ describe('model', function() {
             pin: "0004",
             period: { start: "11:00", end: "12:00" },
             surveys: [ survey ]
-          }, function(err){
+          }, function(err) {
             assert.ifError(err);
 
-            Event.find({}).populate('surveys').exec(function(err, events){
+            Event.find({}).populate('surveys').exec(function(err, events) {
               assert.ifError(err);
 
               assert.ok(events[0].surveys[0] instanceof Survey);
@@ -819,7 +819,7 @@ describe('model', function() {
 
         async.forEach(
           [impressionEvent, conversionEvent, ignoredImpressionEvent],
-          function (doc, cb) {
+          function(doc, cb) {
             doc.save(cb);
           },
           done

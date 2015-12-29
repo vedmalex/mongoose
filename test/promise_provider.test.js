@@ -51,8 +51,9 @@ describe('ES6 promises: ', function() {
       MyModel = db.model('es6promise', testSchema);
     });
 
-    after(function() {
+    after(function(done) {
       PromiseProvider.reset();
+      db.close(done);
     });
 
     afterEach(function(done) {
@@ -186,8 +187,9 @@ describe('ES6 promises: ', function() {
       MyModel = db.model('es6promise_bluebird', testSchema);
     });
 
-    after(function() {
+    after(function(done) {
       PromiseProvider.reset();
+      db.close(done);
     });
 
     afterEach(function(done) {
@@ -305,6 +307,21 @@ describe('ES6 promises: ', function() {
       var promise = MyModel.create({ test: '123' });
       assert.equal(promise.constructor, bluebird);
       promise.then(function() {
+
+        var p = MyModel.create({});
+        p.catch(function(error) {
+          assert.ok(error);
+          done();
+        });
+      });
+    });
+
+    it('subdocument validation (gh-3681)', function(done) {
+      var subSchema = new Schema({ name: { type: String, required: true } });
+      var parentSchema = new Schema({ sub: [subSchema] });
+      var Parent = db.model('gh3681', parentSchema);
+
+      Parent.create({ sub: [{}] }).catch(function() {
         done();
       });
     });
@@ -321,8 +338,9 @@ describe('ES6 promises: ', function() {
       MyModel = db.model('es6promise_q', testSchema);
     });
 
-    after(function() {
+    after(function(done) {
       PromiseProvider.reset();
+      db.close(done);
     });
 
     afterEach(function(done) {
